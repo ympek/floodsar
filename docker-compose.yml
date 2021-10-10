@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+  mgr:
+    build: .
+    volumes:
+      - /mnt/d/ostatnie_polrocze_biebrza/:/app/sardata/:ro
+      - /mnt/d/sar/testdataset/:/app/testdat/:ro
+    ports:
+      - "45678:45678"
