@@ -47,4 +47,7 @@ RUN npm install
 
 WORKDIR /app
 
+RUN make
+RUN make mapper
+
 CMD ["/root/start.sh", ""]

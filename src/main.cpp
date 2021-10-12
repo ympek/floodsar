@@ -7,11 +7,12 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-
 #include "gdal_priv.h"
 #include "cpl_conv.h" // for CPLMalloc()
 #include "ogrsf_frmts.h"
 #include <fcntl.h>
+
+#include "../vendor/cxxopts.hpp"
 
 #include "types.hpp"
 #include "utils.hpp"
@@ -19,60 +20,11 @@
 #include "polarization.hpp"
 #include "rasters.hpp"
 #include "RasterInfo.hpp"
-#include "../vendor/cxxopts.hpp"
+#include "HydroDataReader.hpp"
 
 namespace fs = std::filesystem;
 
 const std::string kmeansInputFilename = "KMEANS_INPUT";
-
-class RasterInfoExtractor {
-  public:
-    virtual RasterInfo extractFromPath(std::string filepath) = 0;
-};
-
-class MinimalExampleExtractor : public RasterInfoExtractor {
-  public:
-    RasterInfo extractFromPath(std::string filepath)
-    {
-      Polarization pol;
-      std::string subPol = filepath.substr(13, 2);
-      std::string subDat = filepath.substr(16, 8);
-      pol = stringToPol(subPol);
-      return RasterInfo(filepath, pol, subDat);
-    }
-};
-
-class HypeExtractor : public RasterInfoExtractor {
-  public:
-    RasterInfo extractFromPath(std::string filepath)
-    {
-      std::vector<std::string> result;
-
-      std::stringstream data(filepath);
-
-      std::string line;
-
-      while(std::getline(data, line, '_'))
-      {
-        result.push_back(line); // Note: You may get a couple of blank lines
-      }
-      std::string polToken = result[result.size() - 1];
-      Polarization resultPol;
-
-      std::string::size_type loc = polToken.find("VV", 0);
-      if( loc != std::string::npos ) {
-        resultPol = Polarization::VV;
-      }
-      else {
-        // assume VH yolo
-        resultPol = Polarization::VH;
-      }
-
-      std::string dateToken = result[result.size() - 3];
-
-      return RasterInfo(filepath, resultPol, dateToken.substr(0, 8));
-    }
-};
 
 void performClusteringViaKMeansBinary(std::string inputFilename, int numClasses) {
   std::string outDir = ".floodsar-cache/kmeans_outputs/" + inputFilename + "_cl_" + std::to_string(numClasses);
@@ -115,7 +67,7 @@ void writeThresholdingResultsToFile(GDALDataset* raster, double threshold, std::
 
 unsigned int calcFloodedArea(GDALDataset* raster, double threshold) {
   auto rasterBand = raster->GetRasterBand(1);
-  unsigned int floodedArea = 0; // well it's sum of flooded pixels according to threshold;
+  unsigned int floodedArea = 0; // sum of flooded pixels according to threshold;
   const unsigned int xSize = rasterBand->GetXSize();
   const unsigned int ySize = rasterBand->GetYSize();
   const unsigned int words = xSize * ySize;
@@ -138,24 +90,6 @@ unsigned int calcFloodedArea(GDALDataset* raster, double threshold) {
   return floodedArea;
 }
 
-class HydroDataReader {
-  public:
-    HydroDataReader() {}
-
-    void readFile(std::map<Date, double>& outputDataMap, std::string filePath)
-    {
-      std::ifstream file(filePath);
-
-      CSVRow row;
-      while(file >> row)
-      {
-        const Date day = static_cast<std::string>(row[0]);
-        outputDataMap[day] = std::stod(static_cast<std::string>(row[1]));
-        // std::cout << "Co jest z tym...." << row[0] << "...." << row[1] << "\n";
-      }
-    }
-};
-
 void getProjectionInfo(std::string rasterPath, std::string proj4filePath) {
   std::string command = "gdalsrsinfo";
 
@@ -169,24 +103,17 @@ void getProjectionInfo(std::string rasterPath, std::string proj4filePath) {
 // returns absolute paths to all images that will take part in calculating the result
 std::vector<RasterInfo> readRasterDirectory(std::string dirname, std::string fileExtension, RasterInfoExtractor* extractor)
 {
-  int counter = 0; // LIMIT
   std::vector<RasterInfo> infos;
 
   for(auto& p: fs::recursive_directory_iterator(dirname)) {
     auto filepath = p.path();
     if (filepath.extension().string() == fileExtension) {
-      // if (counter >= 6) {
-      //   break;// out of loop
-      // }
-      // std::cout << "Debugging... " << p.path().string() << std::endl;
-      // to mocno spowalnia te impreze ....
       std::string proj4Path = ".floodsar-cache/proj4/" + filepath.filename().string() + "_proj4";
       std::cout << "proj4Path " << proj4Path << "\n";
       if (!fs::exists(proj4Path)) {
         std::cout << "Getting projection info for " + filepath.string();
         getProjectionInfo(filepath.string(), proj4Path);
       }
-      // now I can read it.
       std::ifstream proj4file(proj4Path);
 
       RasterInfo extractedInfo = extractor->extractFromPath(filepath.string());
@@ -212,7 +139,6 @@ void mosaicRasters(const std::string targetPath, const std::vector<std::string>&
 }
 
 void performMosaicking(std::vector<RasterInfo>& rasterInfos, std::vector<RasterInfo>& outputVector) {
-  // przejdz przez wszystkie, wykryj duplikaty
   std::map<std::string, std::vector<RasterInfo>> rastersMap;
 
   std::vector<std::thread> threads;
@@ -225,7 +151,7 @@ void performMosaicking(std::vector<RasterInfo>& rasterInfos, std::vector<RasterI
 
     rastersMap[key].push_back(rasterInfos[i]);
   }
-  // i to w sumie tyle. teraz mozaikujemy.
+
   for (const auto& [key, rasters] : rastersMap) {
     if (rasters.size() == 1) {
       // there is only one raster from this day, no worries.
@@ -234,16 +160,12 @@ void performMosaicking(std::vector<RasterInfo>& rasterInfos, std::vector<RasterI
       std::vector<std::string> pathsOnly;
       for (auto& info : rasters) {
         pathsOnly.push_back(info.absolutePath);
-        // std::cout << "Will mosaic: " << info.absolutePath << '\n';
       }
 
       std::string targetPath = "./.floodsar-cache/vrt/" + key + ".vrt";
 
       // there is more, probably two. Need to mosaic them.
       threads.push_back(std::thread(mosaicRasters, targetPath, pathsOnly));
-      // std::cout << "Now Mosaicking above rasters... \n";
-      // mosaicRasters(targetPath, pathsOnly);
-      // construct new RasterInfo for that matter
       outputVector.push_back({ targetPath, rasters.at(0).pol, rasters.at(0).date });
     }
   }
@@ -261,7 +183,6 @@ void createCacheDirectoryIfNotExists() {
   fs::create_directory(".floodsar-cache/proj4");
   fs::create_directory(".floodsar-cache/kmeans_inputs");
   fs::create_directory(".floodsar-cache/kmeans_outputs");
-  fs::create_directory(".floodsar-cache/colorized");
   fs::create_directory(".floodsar-cache/1d_output");
 }
 
@@ -333,9 +254,13 @@ struct ClassifiedCentroid {
 
 struct centroidComparator {
   inline bool operator() (const ClassifiedCentroid& c1, const ClassifiedCentroid& c2) {
-    // return (c1.vv + c1.vh < c2.vv + c2.vh);
-    // return (c1.vv < c2.vv);
-    return (c1.vh < c2.vh);
+    if (strategy == "vh") {
+      return (c1.vh < c2.vh);
+    } else if (strategy == "sum") {
+      return (c1.vv + c1.vh < c2.vv + c2.vh);
+    } else {
+      return (c1.vv < c2.vv);
+    }
   }
 };
 
@@ -414,19 +339,25 @@ int main(int argc, char** argv)
     ("d,directory", "Path to directory which to search for SAR images", cxxopts::value<std::string>())
     ("h,hydro", "Path to file with hydrological data. Program expects csv.", cxxopts::value<std::string>())
     ("e,extension", "Files with this extension will be attempted to be loaded", cxxopts::value<std::string>())
+    ("o,aoi", "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.", cxxopts::value<std::string>())
     ("s,skip-clustering", "Do not perform clustering, assume output files are there")
-    ("r,skip-cropping", "Do not crop, assume data folder contains proper samples")
-    ("t,type", "Data type, supported are poc, hype", cxxopts::value<std::string>())
+    ("t,type", "Data type, supported are poc, hype. Use hype if you process Sentinel-1 data. ", cxxopts::value<std::string>())
+    ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm", cxxopts::value<std::string>())
     ;
 
   auto userInput = options.parse(argc, argv);
   auto algo = userInput["algorithm"].as<std::string>();
+  auto strategy = userInput["strategy"].as<std::string>();
   auto hydroDataCsvFile = userInput["hydro"].as<std::string>();
 
   // we defaults to 2D version.
   bool isSinglePolVersion = false;
   if (algo == "1D") {
     isSinglePolVersion = true;
+  }
+
+  if (!userInput.count("strategy")) {
+    strategy = "vh";
   }
 
   bool cacheOnly = false;
@@ -467,7 +398,8 @@ int main(int argc, char** argv)
 
     std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << "rasters. Cropping... \n";
 
-    auto areaOfInterestDataset = static_cast<GDALDataset*>(GDALOpen("./test/zones_34N.tif", GA_ReadOnly));
+    auto areaFilePath = userInput["aoi"];
+    auto areaOfInterestDataset = static_cast<GDALDataset*>(GDALOpen(areaFilePath, GA_ReadOnly));
     cropRastersToAreaOfInterest(rasterPathsAfterMosaicking, areaOfInterestDataset);
   }
 
