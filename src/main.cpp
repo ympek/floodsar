@@ -252,19 +252,25 @@ struct ClassifiedCentroid {
   unsigned int cl;
 };
 
-struct centroidComparator {
+struct compareByVH {
   inline bool operator() (const ClassifiedCentroid& c1, const ClassifiedCentroid& c2) {
-    if (strategy == "vh") {
-      return (c1.vh < c2.vh);
-    } else if (strategy == "sum") {
-      return (c1.vv + c1.vh < c2.vv + c2.vh);
-    } else {
-      return (c1.vv < c2.vv);
-    }
+    return (c1.vh < c2.vh);
   }
 };
 
-std::vector<unsigned int> createFloodClassesList(std::string clustersFilePath, unsigned int classesNum) {
+struct compareByVV {
+  inline bool operator() (const ClassifiedCentroid& c1, const ClassifiedCentroid& c2) {
+    return (c1.vv < c2.vv);
+  }
+};
+
+struct compareBySum {
+  inline bool operator() (const ClassifiedCentroid& c1, const ClassifiedCentroid& c2) {
+    return (c1.vv + c1.vh < c2.vv + c2.vh);
+  }
+};
+
+std::vector<unsigned int> createFloodClassesList(std::string clustersFilePath, unsigned int classesNum, std::string strategy) {
   unsigned int index = 1;
   std::ifstream infile(clustersFilePath);
   double centerX, centerY;
@@ -275,10 +281,16 @@ std::vector<unsigned int> createFloodClassesList(std::string clustersFilePath, u
     index++;
   }
 
-  std::sort(centroids.begin(), centroids.end(), centroidComparator());
+  if (strategy == "vh") {
+    std::sort(centroids.begin(), centroids.end(), compareByVH());
+  } else if (strategy == "sum") {
+    std::sort(centroids.begin(), centroids.end(), compareBySum());
+  } else {
+    std::sort(centroids.begin(), centroids.end(), compareByVV());
+  }
+
   // now lets create the list...
   std::vector<unsigned int> output;
-
 
   // also save output to file - it will be helpful for the plots.
   std::ofstream ofs;
@@ -297,12 +309,13 @@ void calculateFloodedAreasFromKMeansOutput(
     std::vector<unsigned int>& floodedAreas,//vector to fill
     unsigned int numberOfClasses,
     unsigned int floodClassesNum,
-    int rowsPerDate)
+    int rowsPerDate,
+    std::string strategy)
 {
   const std::string kmeansResultBasePath = "./.floodsar-cache/kmeans_outputs/" + kmeansInputFilename + "_cl_" + std::to_string(numberOfClasses) + "/";
   const std::string clustersPath = kmeansResultBasePath + std::to_string(numberOfClasses) + "-clusters.txt";
   const std::string pointsPath = kmeansResultBasePath + std::to_string(numberOfClasses) + "-points.txt";
-  auto floodClasses = createFloodClassesList(clustersPath, floodClassesNum);
+  auto floodClasses = createFloodClassesList(clustersPath, floodClassesNum, strategy);
 
   // uh oh... programming... i love this shit...
   int iterations = 0;
@@ -341,8 +354,8 @@ int main(int argc, char** argv)
     ("e,extension", "Files with this extension will be attempted to be loaded", cxxopts::value<std::string>())
     ("o,aoi", "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.", cxxopts::value<std::string>())
     ("s,skip-clustering", "Do not perform clustering, assume output files are there")
-    ("t,type", "Data type, supported are poc, hype. Use hype if you process Sentinel-1 data. ", cxxopts::value<std::string>())
-    ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm", cxxopts::value<std::string>())
+    ("t,type", "Data type, supported are poc, hype. Use hype if you process Sentinel-1 data. ", cxxopts::value<std::string>()->default_value("hype"))
+    ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm", cxxopts::value<std::string>()->default_value("vv"))
     ;
 
   auto userInput = options.parse(argc, argv);
@@ -354,10 +367,6 @@ int main(int argc, char** argv)
   bool isSinglePolVersion = false;
   if (algo == "1D") {
     isSinglePolVersion = true;
-  }
-
-  if (!userInput.count("strategy")) {
-    strategy = "vh";
   }
 
   bool cacheOnly = false;
@@ -398,8 +407,8 @@ int main(int argc, char** argv)
 
     std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << "rasters. Cropping... \n";
 
-    auto areaFilePath = userInput["aoi"];
-    auto areaOfInterestDataset = static_cast<GDALDataset*>(GDALOpen(areaFilePath, GA_ReadOnly));
+    auto areaFilePath = userInput["aoi"].as<std::string>();
+    auto areaOfInterestDataset = static_cast<GDALDataset*>(GDALOpen(areaFilePath.c_str(), GA_ReadOnly));
     cropRastersToAreaOfInterest(rasterPathsAfterMosaicking, areaOfInterestDataset);
   }
 
@@ -546,7 +555,7 @@ int main(int argc, char** argv)
       unsigned int floodClassesNum = cl / 2;
       while (floodClassesNum) {
         std::vector<unsigned int> floodedAreaValues;
-        calculateFloodedAreasFromKMeansOutput(floodedAreaValues, cl, floodClassesNum, rowsPerDate);
+        calculateFloodedAreasFromKMeansOutput(floodedAreaValues, cl, floodClassesNum, rowsPerDate, strategy);
         const double corrCoeff = calcCorrelationCoeff(floodedAreaValues, elevations);
 
         std::cout << "Calculated correlation [" << indexForLogs << "] allClasses: " << cl
