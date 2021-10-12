@@ -50,4 +50,6 @@ WORKDIR /app
 RUN make
 RUN make mapper
 
+RUN mkdir -p .floodsar-cache/cropped
+
 CMD ["/root/start.sh", ""]

@@ -480,13 +480,11 @@ int main(int argc, char** argv)
     std::cout << "Floodsar algorithm: dual-pol (new/improved)\n";
 
     std::vector<int> numClassesToTry;
-    for (int j = 2; j <= 32; j++) {
+    for (int j = 2; j <= 10; j++) {
       numClassesToTry.push_back(j);
     }
 
 
-    // what will be the data struct here..
-    std::cout << "CREATING ONE BIG INPUT FILE, GOING THROUGH ALL OF THE SAR IMAGES\n";
     std::ofstream ofs;
     ofs.open("./.floodsar-cache/kmeans_inputs/" + kmeansInputFilename, std::ofstream::out);
     int rowsPerDate = 0; //for starters
@@ -527,7 +525,6 @@ int main(int argc, char** argv)
       }
     }
 
-    // trza zamknac plik
     ofs.close();
 
     std::cout << "Input ready. Have " << elevations.size() << " pairs of images matched with hydro data\n";
@@ -567,7 +564,7 @@ int main(int argc, char** argv)
 
     }
 
-    std::cout << "my poor results... " << bestCoeff << " / " << bestMaxClasses << " / " << bestFloodClasses << "\n";
+    std::cout << "RESULTS: Best config is: coeff/all classes/flood classes " << bestCoeff << " / " << bestMaxClasses << " / " << bestFloodClasses << "\n";
   }
 
   return 0;
