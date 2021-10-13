@@ -46,6 +46,10 @@ int main(int argc, char** argv) {
 
   auto userInput = options.parse(argc, argv);
 
+  if(!fs::exists("./raster")) {
+    fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0], "./raster");
+  }
+
   if (userInput.count("base")) {
     // base algoritm mapping.
     floodClasses.push_back(1);
@@ -78,10 +82,10 @@ int main(int argc, char** argv) {
       + std::to_string(numAllClassess) + "/" + std::to_string(numAllClassess)
       + "-points.txt";
 
-    mapDirectory = "./mapped/" + std::to_string(numAllClassess) + "_raw_" + std::to_string(numFloodClasses) + "/";
+    mapDirectory = "./mapped/" + std::to_string(numAllClassess) + "__" + std::to_string(numFloodClasses) + "/";
   }
 
-  std::string rasterToClassify = "./some_raster";
+  std::string rasterToClassify = "./raster";
 
   std::ifstream pointsStream(pointsFile);
 
