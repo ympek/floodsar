@@ -29,7 +29,7 @@ Build docker image. We tag it with name 'floodsar_img'. Inside the image are a l
 
 Once it builds, run the container:
 
-```docker run -d floodsar_img --name floodsar```
+```docker run -d --name floodsar floodsar_img```
 
 Now we can enter the container
 
