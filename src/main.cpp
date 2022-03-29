@@ -44,10 +44,8 @@ void performClusteringViaKMeansBinary(std::string inputFilename, int numClasses)
   std::system(command.c_str());
 }
 
-  void print_map(std::string_view comment, const std::map<std::string, double>& m)
+  void print_map(const std::map<std::string, double>& m)
 {
-    std::cout << comment ;
-    // iterate using C++17 facilities
     for (const auto& [key, value] : m) {
         std::cout << '[' << key << "] = " << value << "\n";
     }
@@ -122,13 +120,13 @@ std::vector<RasterInfo> readRasterDirectory(std::string dirname, std::string fil
     if (filepath.extension().string() == fileExtension) {
       std::string proj4Path = ".floodsar-cache/proj4/" + filepath.filename().string() + "_proj4";
       std::cout << "proj4Path " << proj4Path << "\n";
+	  //if (!fs::exists(proj4Path)) {
       std::cout << "Getting projection info for " + filepath.string();
       getProjectionInfo(filepath.string(), proj4Path);
+	 //}
 
       std::ifstream proj4file(proj4Path);
 	  
-      std::vector<std::string> result;
-
       RasterInfo extractedInfo = extractor->extractFromPath(filepath.string());
 
       std::getline(proj4file, extractedInfo.proj4);
@@ -379,7 +377,7 @@ int main(int argc, char** argv)
     ("o,aoi", "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.", cxxopts::value<std::string>())
     ("p,epsg", "Target EPSG code for processing. Should be tha same as for the area of interest. e.g.: EPSG:32630 for UTM 30N.", cxxopts::value<std::string>()->default_value("none"))
     ("s,skip-clustering", "Do not perform clustering, assume output files are there")
-    ("t,type", "Data type, supported are poc, hype. Use hype if you process Sentinel-1 data. ", cxxopts::value<std::string>()->default_value("hype"))
+    ("t,type", "Data type, supported are poc, hype, asf. Use asf if you process Sentinel-1 data from ASF on demand processing. ", cxxopts::value<std::string>()->default_value("hype"))
     ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm", cxxopts::value<std::string>()->default_value("vv"))
     ;
 
@@ -455,9 +453,8 @@ int main(int argc, char** argv)
   std::map<Date, double> obsElevationsMap;
   std::cout << hydroDataCsvFile+"\n";
   hydroReader.readFile(obsElevationsMap, hydroDataCsvFile);
-  print_map("", obsElevationsMap);
+  print_map(obsElevationsMap);
   std::cout << "map ok\n";
-  int i=0;
 
   if (isSinglePolVersion) {
     std::cout << "Floodsar algorithm: single-pol (old)\n";
@@ -467,8 +464,8 @@ int main(int argc, char** argv)
 		return std::stod(val);
 	});
 	std::cout << "threshold from, to, step:\n";
-	std::cout << std::to_string(thresholdSequenceDbl[0]);
-	std::cout << std::to_string(thresholdSequenceDbl[1]);
+	std::cout << std::to_string(thresholdSequenceDbl[0])+", ";
+	std::cout << std::to_string(thresholdSequenceDbl[1])+", ";
 	std::cout << std::to_string(thresholdSequenceDbl[2]);
 	std::cout << "\n";
 
@@ -500,8 +497,6 @@ int main(int argc, char** argv)
         for (auto datasetPath : croppedRasterPaths) {
           auto dataset = static_cast<GDALDataset*>(GDALOpen(datasetPath.c_str(), GA_ReadOnly));
 		  std::cout << datasetPath+"\n";
-		  i++;
-		  std::cout << std::to_string(i);
           const unsigned int area = calcFloodedArea(dataset, threshold);
           // std::cout << "area for " << datasetPath << "->" << area << '\n';
           floodedAreaValues.push_back(area);
@@ -551,7 +546,7 @@ int main(int argc, char** argv)
 		return std::stoi(val);
 	});
 	std::cout << "classes from, to:\n";
-	std::cout << std::to_string(thresholdSequenceInt[0]);
+	std::cout << std::to_string(thresholdSequenceInt[0])+", ";
 	std::cout << std::to_string(thresholdSequenceInt[1]);
 	std::cout << "\n";
 
