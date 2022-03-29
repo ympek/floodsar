@@ -12,6 +12,8 @@
 #include "ogrsf_frmts.h"
 #include <fcntl.h>
 
+#include <string_view>
+
 #include "../vendor/cxxopts.hpp"
 
 #include "types.hpp"
@@ -40,6 +42,16 @@ void performClusteringViaKMeansBinary(std::string inputFilename, int numClasses)
   command.append(outDir);
 
   std::system(command.c_str());
+}
+
+  void print_map(std::string_view comment, const std::map<std::string, double>& m)
+{
+    std::cout << comment ;
+    // iterate using C++17 facilities
+    for (const auto& [key, value] : m) {
+        std::cout << '[' << key << "] = " << value << "\n";
+    }
+    std::cout << '\n';
 }
 
 void writeThresholdingResultsToFile(GDALDataset* raster, double threshold, std::ofstream& ofs) {
@@ -93,7 +105,7 @@ unsigned int calcFloodedArea(GDALDataset* raster, double threshold) {
 void getProjectionInfo(std::string rasterPath, std::string proj4filePath) {
   std::string command = "gdalsrsinfo";
 
-  command.append(" --single-line -o proj4 ");
+  command.append(" --single-line -o epsg ");
   command.append(rasterPath);
   command.append(" >" + proj4filePath);
 
@@ -110,14 +122,20 @@ std::vector<RasterInfo> readRasterDirectory(std::string dirname, std::string fil
     if (filepath.extension().string() == fileExtension) {
       std::string proj4Path = ".floodsar-cache/proj4/" + filepath.filename().string() + "_proj4";
       std::cout << "proj4Path " << proj4Path << "\n";
-      if (!fs::exists(proj4Path)) {
-        std::cout << "Getting projection info for " + filepath.string();
-        getProjectionInfo(filepath.string(), proj4Path);
-      }
+      std::cout << "Getting projection info for " + filepath.string();
+      getProjectionInfo(filepath.string(), proj4Path);
+
       std::ifstream proj4file(proj4Path);
+	  
+      std::vector<std::string> result;
 
       RasterInfo extractedInfo = extractor->extractFromPath(filepath.string());
+
       std::getline(proj4file, extractedInfo.proj4);
+	  std::cout << polToString(extractedInfo.pol)+"\n";
+	  std::cout << extractedInfo.date+"\n";
+	  std::cout << extractedInfo.proj4+"\n";
+	  std::cout << "\n";
       infos.push_back(extractedInfo);
     }
   }
@@ -186,16 +204,17 @@ void createCacheDirectoryIfNotExists() {
   fs::create_directory(".floodsar-cache/1d_output");
 }
 
-std::string performReprojection(RasterInfo& info) {
+std::string performReprojection(RasterInfo& info, std::string epsgCode) {
   std::string command = "gdalwarp";
   std::string filename = ".floodsar-cache/reprojected/repd_" + polToString(info.pol) + "_" + info.date;
-
+  //reading cache data prevents some chages
+  /*
   if (fs::exists(filename)) {
     std::cout << "skipping reprojection for " << info.date << "_" << polToString(info.pol) << ". File is there...";
     return filename;
   }
-
-  command.append(" -t_srs EPSG:32634 -overwrite ");
+  */
+  command.append(" -t_srs "+epsgCode+" -overwrite ");
   command.append(info.absolutePath);
   command.append(" ");
   command.append(filename);
@@ -205,16 +224,19 @@ std::string performReprojection(RasterInfo& info) {
   return filename;
 }
 
-void reprojectIfNeeded(std::vector<RasterInfo>& rasters) {
+void reprojectIfNeeded(std::vector<RasterInfo>& rasters, std::string epsgCode) {
   for (auto& it : rasters) {
-    std::cout << "checking if reprojection needed " << it.proj4;
-    // FIXME: hardcoded values.
-    if ("+proj=utm +zone=35 +datum=WGS84 +units=m +no_defs" == it.proj4) {
+	std::cout <<it.absolutePath+ "\n";
+    std::cout << "checking if reprojection needed to "<< epsgCode + " ...\n";
+    if (epsgCode != it.proj4) {
       // needs reprojection.
-      auto newPath = performReprojection(it);
-      std::cout << "reprojection for " << it.absolutePath << " now is " << newPath;
+	  std::cout << "... yes\n";
+      auto newPath = performReprojection(it, epsgCode);
+      std::cout << "reprojection for " << it.absolutePath << " now is " << newPath + "\n";
       it.absolutePath = newPath;
-    }
+    } else {
+		std::cout << "... no.\n";
+	}
   }
 }
 
@@ -341,6 +363,7 @@ void calculateFloodedAreasFromKMeansOutput(
 int main(int argc, char** argv)
 {
   std::cout << "Floodsar start" << '\n';
+  std::ofstream datesFile;
   createCacheDirectoryIfNotExists();
   GDALAllRegister();
 
@@ -352,7 +375,9 @@ int main(int argc, char** argv)
     ("d,directory", "Path to directory which to search for SAR images", cxxopts::value<std::string>())
     ("h,hydro", "Path to file with hydrological data. Program expects csv.", cxxopts::value<std::string>())
     ("e,extension", "Files with this extension will be attempted to be loaded", cxxopts::value<std::string>())
+    ("n,threshold", "Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for thresholding, or 2,10 for clustering.", cxxopts::value<std::vector<std::string>>())
     ("o,aoi", "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.", cxxopts::value<std::string>())
+    ("p,epsg", "Target EPSG code for processing. Should be tha same as for the area of interest. e.g.: EPSG:32630 for UTM 30N.", cxxopts::value<std::string>()->default_value("none"))
     ("s,skip-clustering", "Do not perform clustering, assume output files are there")
     ("t,type", "Data type, supported are poc, hype. Use hype if you process Sentinel-1 data. ", cxxopts::value<std::string>()->default_value("hype"))
     ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm", cxxopts::value<std::string>()->default_value("vv"))
@@ -362,6 +387,13 @@ int main(int argc, char** argv)
   auto algo = userInput["algorithm"].as<std::string>();
   auto strategy = userInput["strategy"].as<std::string>();
   auto hydroDataCsvFile = userInput["hydro"].as<std::string>();
+  auto thresholdSequence = userInput["threshold"].as<std::vector<std::string>>();
+  auto epsgCode = userInput["epsg"].as<std::string>();
+  
+  if (epsgCode=="none") {
+	  std::cout << "EPSG not provided, use -p option. Program will quit\n";
+	  return 0;
+  }
 
   // we defaults to 2D version.
   bool isSinglePolVersion = false;
@@ -389,6 +421,10 @@ int main(int argc, char** argv)
       HypeExtractor e;
       extractor = &e;
       std::cout << "Using Hyp3 extractor...\n";
+    } else if (datasetType == "asf") {
+      AsfExtractor e;
+      extractor = &e;
+      std::cout << "Using ASF extractor...\n";
     } else {
       std::cout << "unsupported extractor...\n";
     }
@@ -400,32 +436,48 @@ int main(int argc, char** argv)
 
     std::cout << "floodsar: found " << rasterPathsBeforeMosaicking.size() << "rasters. Now finding dups & mosaicking \n";
 
-    // reprojection 35N->34N
-    reprojectIfNeeded(rasterPathsBeforeMosaicking);
+    // reprojection
+    reprojectIfNeeded(rasterPathsBeforeMosaicking, epsgCode);
     // mosaicking...
     performMosaicking(rasterPathsBeforeMosaicking, rasterPathsAfterMosaicking);
 
-    std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << "rasters. Cropping... \n";
+    std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << " rasters. Cropping... \n";
 
     auto areaFilePath = userInput["aoi"].as<std::string>();
     auto areaOfInterestDataset = static_cast<GDALDataset*>(GDALOpen(areaFilePath.c_str(), GA_ReadOnly));
+	std::cout << areaFilePath+"\n";
+	std::cout << rasterPathsAfterMosaicking[0].absolutePath+"\n";
+	
     cropRastersToAreaOfInterest(rasterPathsAfterMosaicking, areaOfInterestDataset);
   }
 
   HydroDataReader hydroReader;
   std::map<Date, double> obsElevationsMap;
+  std::cout << hydroDataCsvFile+"\n";
   hydroReader.readFile(obsElevationsMap, hydroDataCsvFile);
-
-
+  print_map("", obsElevationsMap);
+  std::cout << "map ok\n";
+  int i=0;
 
   if (isSinglePolVersion) {
     std::cout << "Floodsar algorithm: single-pol (old)\n";
+	std::vector<double> thresholdSequenceDbl (thresholdSequence.size());
+	std::transform(thresholdSequence.begin(), thresholdSequence.end(), thresholdSequenceDbl.begin(), [](const std::string& val)
+	{
+		return std::stod(val);
+	});
+	std::cout << "threshold from, to, step:\n";
+	std::cout << std::to_string(thresholdSequenceDbl[0]);
+	std::cout << std::to_string(thresholdSequenceDbl[1]);
+	std::cout << std::to_string(thresholdSequenceDbl[2]);
+	std::cout << "\n";
 
     std::vector<std::string> polarizations { "VH", "VV" };
+	datesFile.open (".floodsar-cache/dates.txt");
     for (auto& polarization : polarizations) {
-      std::vector<double> elevations; // inaczej water levels
+      std::vector<double> elevations; // i.e. water levels or discharges
       std::vector<std::string> croppedRasterPaths;
-
+	  
       for (const auto& [day, elevation] : obsElevationsMap) {
         // interesting for us are only dates when we have appropriate picture...
         // so let's use only these...
@@ -434,20 +486,26 @@ int main(int argc, char** argv)
         if (fs::exists(rpath)) {
           elevations.push_back(elevation);
           croppedRasterPaths.push_back(rpath);
+		  datesFile << day+"\n";
         }
+		
       }
-
+	  datesFile.close();
       std::vector<double> correlations;
-      std::vector<double> thresholds = createSequence(0.01, 0.3, 0.001);
+      std::vector<double> thresholds = createSequence(thresholdSequenceDbl[0], thresholdSequenceDbl[1], thresholdSequenceDbl[2]);
 
       for (double threshold : thresholds) {
         std::vector<unsigned int> floodedAreaValues;
 
         for (auto datasetPath : croppedRasterPaths) {
           auto dataset = static_cast<GDALDataset*>(GDALOpen(datasetPath.c_str(), GA_ReadOnly));
+		  std::cout << datasetPath+"\n";
+		  i++;
+		  std::cout << std::to_string(i);
           const unsigned int area = calcFloodedArea(dataset, threshold);
           // std::cout << "area for " << datasetPath << "->" << area << '\n';
           floodedAreaValues.push_back(area);
+		  GDALClose(dataset);
         }
 
         const double corrCoeff = calcCorrelationCoeff(floodedAreaValues, elevations);
@@ -487,9 +545,18 @@ int main(int argc, char** argv)
 
   } else {
     std::cout << "Floodsar algorithm: dual-pol (new/improved)\n";
+	std::vector<int> thresholdSequenceInt (thresholdSequence.size());
+	std::transform(thresholdSequence.begin(), thresholdSequence.end(), thresholdSequenceInt.begin(), [](const std::string& val)
+	{
+		return std::stoi(val);
+	});
+	std::cout << "classes from, to:\n";
+	std::cout << std::to_string(thresholdSequenceInt[0]);
+	std::cout << std::to_string(thresholdSequenceInt[1]);
+	std::cout << "\n";
 
     std::vector<int> numClassesToTry;
-    for (int j = 2; j <= 10; j++) {
+    for (int j = thresholdSequenceInt[0]; j <= thresholdSequenceInt[1]; j++) {
       numClassesToTry.push_back(j);
     }
 
@@ -502,17 +569,19 @@ int main(int argc, char** argv)
 
     std::vector<double> elevations; // inaczej water levels
     std::vector<std::string> croppedRasterPaths;
-
+	datesFile.open (".floodsar-cache/dates.txt");
     for (const auto& [day, elevation] : obsElevationsMap) {
       // interesting for us are only dates when we have appropriate picture...
       // so let's use only these...
       // since we check filesystem... it's potential perf. bottleneck...
       const std::string vhPath = "./.floodsar-cache/cropped/resampled__VH_" + day;
       const std::string vvPath = "./.floodsar-cache/cropped/resampled__VV_" + day;
+	  
       if (fs::exists(vhPath) && fs::exists(vvPath)) {
         elevations.push_back(elevation);
         std::cout << "Elevation for " << day << " = " << elevation << '\n';
         // croppedRasterPathsFor2DCase.push_back({ vhPath, vvPath });
+		datesFile << day+"\n";
 
         auto vhDataset = static_cast<GDALDataset*>(GDALOpen(vhPath.c_str(), GA_ReadOnly));
         auto vvDataset = static_cast<GDALDataset*>(GDALOpen(vvPath.c_str(), GA_ReadOnly));
@@ -532,8 +601,10 @@ int main(int argc, char** argv)
           ofs << vhPixelValues.at(i) << " " << vvPixelValues.at(i) << "\n";
         }
       }
+	  
     }
 
+	datesFile.close();
     ofs.close();
 
     std::cout << "Input ready. Have " << elevations.size() << " pairs of images matched with hydro data\n";

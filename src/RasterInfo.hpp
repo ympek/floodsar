@@ -1,8 +1,10 @@
 #pragma once
-
+#include <filesystem>
 #include <iostream>
 #include "polarization.hpp"
 #include "types.hpp"
+
+namespace fs = std::filesystem;
 
 class RasterInfo {
   public:
@@ -56,6 +58,37 @@ class HypeExtractor : public RasterInfoExtractor {
       }
 
       std::string dateToken = result[result.size() - 3];
+
+      return RasterInfo(filepath, resultPol, dateToken.substr(0, 8));
+    }
+};
+
+class AsfExtractor : public RasterInfoExtractor {
+  public:
+    RasterInfo extractFromPath(std::string filepath)
+    {
+      std::vector<std::string> result;
+
+      std::stringstream data(fs::path(filepath).filename());
+
+      std::string line;
+
+      while(std::getline(data, line, '_'))
+      {
+        result.push_back(line); // Note: You may get a couple of blank lines
+      }
+      std::string polToken = result[result.size() - 1];
+      Polarization resultPol;
+
+      std::string::size_type loc = polToken.find("VV", 0);
+      if( loc != std::string::npos ) {
+        resultPol = Polarization::VV;
+      }
+      else {
+        resultPol = Polarization::VH;
+      }
+
+      std::string dateToken = result[2];
 
       return RasterInfo(filepath, resultPol, dateToken.substr(0, 8));
     }

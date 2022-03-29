@@ -36,7 +36,7 @@ BoundingBox getRasterBoundingBox(GDALDataset* raster) {
 void cropToZone(BoundingBox zoneBBox, RasterInfo info)
 {
   std::string command = "gdal_translate";
-  command.append(" -r bilinear -projwin_srs EPSG:32634 -projwin ");
+  command.append(" -r bilinear -projwin_srs " + info.proj4+" -projwin ");
   command.append(std::to_string(zoneBBox.upperLeftX));
   command.append(" ");
   command.append(std::to_string(zoneBBox.upperLeftY));
@@ -80,7 +80,7 @@ void cropRastersToAreaOfInterest(std::vector<RasterInfo>& rasterPaths, GDALDatas
 
 void printProjCrs(RasterInfo info) {
   std::string command = "gdalsrsinfo";
-  command.append(" --single-line -o proj4");
+  command.append(" --single-line -o epsg");
   command.append(" ");
   command.append(info.absolutePath);
 
