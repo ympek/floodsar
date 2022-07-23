@@ -2,7 +2,7 @@ FROM osgeo/gdal:ubuntu-small-latest
 LABEL maintainer="sz@ympek.net"
 
 # Note: this is development setup i.e contains language server and other shitz...
-
+ENV DEBIAN_FRONTEND=noninteractive
 # basic tools
 RUN apt update && apt install -q -y build-essential g++ make curl git silversearcher-ag sudo wget software-properties-common dirmngr
 
