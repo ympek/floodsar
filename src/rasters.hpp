@@ -4,7 +4,7 @@
 #include "XYPair.hpp"
 #include "BoundingBox.hpp"
 #include "RasterInfo.hpp"
-#include "gdal_priv.h"
+#include "gdal/gdal_priv.h"
 
 BoundingBox getRasterBoundingBox(GDALDataset* raster) {
   BoundingBox boundingBox;

@@ -4,7 +4,7 @@ LABEL maintainer="sz@ympek.net"
 # Note: this is development setup i.e contains language server and other shitz...
 ENV DEBIAN_FRONTEND=noninteractive
 # basic tools
-RUN apt update && apt install -q -y build-essential g++ make curl git silversearcher-ag sudo wget software-properties-common dirmngr
+RUN apt update && apt install -q -y build-essential g++ make curl silversearcher-ag sudo wget software-properties-common dirmngr
 
 # setup R
 # add the signing key (by Michael Rutter) for these repos
@@ -15,9 +15,9 @@ RUN wget -qO- https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc |
 RUN add-apt-repository "deb https://cloud.r-project.org/bin/linux/ubuntu $(lsb_release -cs)-cran40/"
 RUN apt install -y --no-install-recommends r-base
 # install node 14 (LTS)
-RUN curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-RUN apt install -q -y nodejs
-RUN npm i -g yarn
+#RUN curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+#RUN apt install -q -y nodejs
+#RUN npm i -g yarn
 
 WORKDIR /root/
 
@@ -27,11 +27,11 @@ WORKDIR /app
 
 COPY . .
 
-WORKDIR /app/explorer
+#WORKDIR /app/explorer
 
-RUN npm install
+#RUN npm install
 
-WORKDIR /app
+# WORKDIR /app
 
 RUN make
 RUN make mapper

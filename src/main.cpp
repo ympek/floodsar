@@ -8,9 +8,9 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
-#include "gdal_priv.h"
-#include "cpl_conv.h" // for CPLMalloc()
-#include "ogrsf_frmts.h"
+#include "gdal/gdal_priv.h"
+#include "gdal/cpl_conv.h" // for CPLMalloc()
+#include "gdal/ogrsf_frmts.h"
 #include <fcntl.h>
 
 #include <string_view>
@@ -580,9 +580,6 @@ int main(int argc, char** argv)
       std::vector<double> elevations; // i.e. water levels or discharges
       std::vector<std::string> croppedRasterPaths;
 
-      // new kmeans impl
-      std::vector<double> vhAllPixelValues;
-      std::vector<double> vvAllPixelValues;
 	  
       for (const auto& [day, elevation] : obsElevationsMap) {
         // interesting for us are only dates when we have appropriate picture...
@@ -674,6 +671,10 @@ int main(int argc, char** argv)
     std::vector<double> elevations; // inaczej water levels
     std::vector<std::string> croppedRasterPaths;
 	datesFile.open (".floodsar-cache/dates.txt");
+
+  // new kmeans impl
+  std::vector<double> vhAllPixelValues;
+  std::vector<double> vvAllPixelValues;
     for (const auto& [day, elevation] : obsElevationsMap) {
       // interesting for us are only dates when we have appropriate picture...
       // so let's use only these...
