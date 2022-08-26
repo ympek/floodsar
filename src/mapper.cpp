@@ -3,16 +3,16 @@
 #include <sstream>
 #include <filesystem>
 #include <cmath>
-#include "gdal_priv.h"
-#include "cpl_conv.h" // for CPLMalloc()
-#include "ogrsf_frmts.h"
+#include "gdal/gdal_priv.h"
+#include "gdal/cpl_conv.h" // for CPLMalloc()
+#include "gdal/ogrsf_frmts.h"
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <thread>
 #include "XYPair.hpp"
-#include "BoundingBox.hpp"
+#include "rasters.hpp"
 #include "utils.hpp"
 #include <algorithm>
 #include "../vendor/cxxopts.hpp"
@@ -108,10 +108,14 @@ int main(int argc, char** argv) {
 
   auto raster = static_cast<GDALDataset*>(GDALOpen(mapPath.c_str(), GA_Update));
   auto rasterBand = raster->GetRasterBand(1);
-  const unsigned int xSize = rasterBand->GetXSize();
-  const unsigned int ySize = rasterBand->GetYSize();
+  unsigned int xSize = rasterBand->GetXSize();
+  unsigned int ySize = rasterBand->GetYSize();
   const unsigned int words = xSize * ySize;
   double* buffer = static_cast<double*>(CPLMalloc(sizeof(double) * words));
+
+  int pointsExpected = xSize * ySize * dates.size();
+  int pointsActual = 0;
+  pointsActual += xSize * ySize;
 
   while(pointsStream >> point) {
     if (std::find(floodClasses.begin(), floodClasses.end(), point) != floodClasses.end()) {
@@ -144,7 +148,9 @@ int main(int argc, char** argv) {
 
       raster = static_cast<GDALDataset*>(GDALOpen(mapPath.c_str(), GA_Update));
       rasterBand = raster->GetRasterBand(1);
-
+      xSize = rasterBand->GetXSize();
+      ySize = rasterBand->GetYSize();
+      pointsActual += xSize * ySize;
     }
   }
 

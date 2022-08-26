@@ -38,7 +38,7 @@ void performClusteringInPlace(
   fs::create_directory(outDir);
 
   // yeah lets go
-  int maxiter = 100;
+  int maxiter = 50;
   int numPoints = vectorVH.size();
   bool updated = false;
   double best;
@@ -528,6 +528,10 @@ int main(int argc, char** argv)
       AsfExtractor e;
       extractor = &e;
       std::cout << "Using ASF extractor...\n";
+    } else if (datasetType == "debug") {
+      DebugExtractor e;
+      extractor = &e;
+      std::cout << "Using debugging extractor...\n";
     } else {
       std::cout << "unsupported extractor...\n";
     }

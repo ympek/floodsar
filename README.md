@@ -4,18 +4,16 @@ Software package for flood extent mapping using SAR imagery time series and rive
 
 ## Prerequisites:
 
+
 ### Software
-* Only Docker is needed, all the dependencies are inside 
-the container image.
 
-### Data
-* SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 100 dual-pol images or more)
-* Water elevations from river gauge in the area (CSV file with dates and values is expected)
-* Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values dont matter. If you have already cropped images at hand, this step can be skipped.
+Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
 
-## Preparing to run the program
+Install dependencies required to build:
 
-Clone the repo:
+```apt install build-essential g++ make libgdal-dev```
+
+Clone the repository:
 
 ```git clone https://github.com/ympek/floodsar```
 
@@ -23,21 +21,19 @@ Enter the directory:
 
 ```cd floodsar```
 
-Build docker image. We tag it with name 'floodsar_img'. Inside the image are a lot of tools, like R lang, Node.js, GDAL and full development setup - so it might take some time to build.
+Build floodsar and mapper:
 
-```docker build . -t floodsar_img```
+```
+make
+make mapper
+```
 
-Once it builds, run the container:
+You should see binaries inside the directory.
 
-```docker run -d --name floodsar floodsar_img```
-
-Now we can enter the container
-
-```docker exec -it floodsar bash```
-
-And from now on, we can run the program (it should already be built):
-
-```./floodsar <options>```
+### Data
+* SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 100 dual-pol images or more)
+* Water elevations from river gauge in the area (CSV file with dates and values is expected)
+* Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values dont matter. If you have already cropped images at hand, this step can be skipped.
 
 ## Usage / use cases
 
