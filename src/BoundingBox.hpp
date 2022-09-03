@@ -6,4 +6,6 @@ class BoundingBox {
     double upperLeftY;
     double lowerRightX;
     double lowerRightY;
+    int widthInPixels;
+    int heightInPixels;
 };

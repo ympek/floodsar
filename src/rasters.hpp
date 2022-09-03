@@ -12,6 +12,9 @@ BoundingBox getRasterBoundingBox(GDALDataset* raster) {
   const int widthInPixels  = raster->GetRasterBand(1)->GetXSize();
   const int heightInPixels = raster->GetRasterBand(1)->GetYSize();
 
+  boundingBox.widthInPixels = widthInPixels;
+  boundingBox.heightInPixels = heightInPixels;
+
   double affineTransform[6];
 
   raster->GetGeoTransform(affineTransform);
@@ -36,7 +39,11 @@ BoundingBox getRasterBoundingBox(GDALDataset* raster) {
 void cropToZone(BoundingBox zoneBBox, RasterInfo info)
 {
   std::string command = "gdal_translate";
-  command.append(" -strict -r bilinear -outsize 360 241 -projwin_srs " + info.proj4+" -projwin ");
+  command.append(" -strict -r bilinear -outsize ");
+  command.append(std::to_string(zoneBBox.widthInPixels));
+  command.append(" ");
+  command.append(std::to_string(zoneBBox.heightInPixels));
+  command.append(" -projwin_srs " + info.proj4+ " -projwin ");
   command.append(std::to_string(zoneBBox.upperLeftX));
   command.append(" ");
   command.append(std::to_string(zoneBBox.upperLeftY));

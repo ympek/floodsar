@@ -3,6 +3,7 @@
 #include <iostream>
 #include "polarization.hpp"
 #include "types.hpp"
+#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -101,30 +102,19 @@ class DebugExtractor : public RasterInfoExtractor {
     RasterInfo extractFromPath(std::string filepath)
     {
       std::vector<std::string> result;
-
       std::stringstream data(fs::path(filepath).filename());
-
       std::string line;
 
-      while(std::getline(data, line, '_'))
-      {
-        result.push_back(line); // Note: You may get a couple of blank lines
-      }
-      std::string polToken = result[2];
-      Polarization resultPol;
-
-      std::string::size_type loc = polToken.find("VV", 0);
-      if( loc != std::string::npos ) {
-        resultPol = Polarization::VV;
-      }
-      else {
-        resultPol = Polarization::VH;
+      while(std::getline(data, line, '_')) {
+        result.push_back(line);
       }
 
-      std::string dateToken = result[3];
+      std::string polToken = result[8].substr(0, 2);
+      Polarization resultPol = stringToPol(polToken);
+      std::string resultDate = result[2].substr(0, 8);
 
-      std::cout << "dateToken + pol = " << dateToken << "___"  << polToString(resultPol) << "\n";
+      std::cout << "dateToken + pol = " << resultDate << "___"  << polToString(resultPol) << "\n";
 
-      return RasterInfo(filepath, resultPol, dateToken.substr(0, 8));
+      return RasterInfo(filepath, resultPol, resultDate);
     }
 };

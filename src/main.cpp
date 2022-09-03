@@ -9,6 +9,7 @@
 #include "gdal/ogrsf_frmts.h"
 #include <string_view>
 #include <cxxopts.hpp>
+#include <algorithm>
 
 #include "types.hpp"
 #include "utils.hpp"
@@ -214,11 +215,21 @@ readRasterDirectory(std::string dirname, std::string fileExtension, RasterInfoEx
 
     for (auto &p: fs::recursive_directory_iterator(dirname)) {
         auto filepath = p.path();
-        if (filepath.extension().string() != fileExtension) {
-            continue;
+
+        auto ext = filepath.extension().string();
+        if (ext != fileExtension) {
+          // skip if extension does not match
+          continue;
         }
 
-        std::string proj4Path = ".floodsar-cache/proj4/" + filepath.filename().string() + "_proj4";
+        auto name = filepath.filename().string();
+        if (name.find("VV") == std::string::npos &&
+            name.find("VH") == std::string::npos) {
+          // skip if filename does not contain "VV" or "VH" substring
+          continue;
+        }
+
+        std::string proj4Path = ".floodsar-cache/proj4/" + name + "_proj4";
         // std::cout << "proj4Path " << proj4Path << "\n";
         // std::cout << "Getting projection info for " + filepath.string();
         getProjectionInfo(filepath.string(), proj4Path);
@@ -463,47 +474,59 @@ int main(int argc, char **argv) {
     cxxopts::Options options("Floodsar", " - command line options");
 
     options.add_options()
-            ("a,algorithm",
-                    "Choose algorithm. Possible values: 1D, 2D.",
-                    cxxopts::value<std::string>()->default_value("1D"))
-            ("c,cache-only",
-                    "Do not process whole rasters, just use cropped images from cache.")
-            ("d,directory",
-                    "Path to directory which to search for SAR images",
-                    cxxopts::value<std::string>()->default_value(fs::current_path()))
-            ("h,hydro",
-                    "Path to file with hydrological data. Program expects csv.",
-                    cxxopts::value<std::string>())
-            ("e,extension",
-                    "Files with this extension will be attempted to be loaded",
-                    cxxopts::value<std::string>())
-            ("n,threshold",
-                    "Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for thresholding, or 2,10 for clustering.",
-                    cxxopts::value<std::vector<std::string>>())
-            ("o,aoi",
-             "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.",
-             cxxopts::value<std::string>())
-            ("p,epsg",
-             "Target EPSG code for processing. Should be tha same as for the area of interest. e.g.: EPSG:32630 for UTM 30N.",
-             cxxopts::value<std::string>()->default_value("none"))
-            ("s,skip-clustering", "Do not perform clustering, assume output files are there")
-            ("t,type",
-             "Data type, supported are poc, hype, asf. Use asf if you process Sentinel-1 data from ASF on demand processing. ",
-             cxxopts::value<std::string>()->default_value("hype"))
-            ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm",
-             cxxopts::value<std::string>()->default_value("vv"));
+      ("a,algorithm",
+       "Choose algorithm. Possible values: 1D, 2D.",
+       cxxopts::value<std::string>()->default_value("1D"))
+      ("c,cache-only",
+       "Do not process whole rasters, just use cropped images from cache.")
+      ("d,directory",
+       "Path to directory which to search for SAR images",
+       cxxopts::value<std::string>()->default_value(fs::current_path()))
+      ("h,hydro",
+       "Path to file with hydrological data. Program expects csv.",
+       cxxopts::value<std::string>())
+      ("e,extension",
+       "Files with this extension will be attempted to be loaded",
+       cxxopts::value<std::string>())
+      ("n,threshold",
+       "Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for thresholding, or 2,10 for clustering.",
+       cxxopts::value<std::vector<std::string>>())
+      ("o,aoi",
+       "Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.",
+       cxxopts::value<std::string>())
+      ("p,epsg",
+       "Target EPSG code for processing. Should be the same as for the area of interest. e.g.: EPSG:32630 for UTM 30N.",
+       cxxopts::value<std::string>()->default_value("none"))
+      ("s,skip-clustering", "Do not perform clustering, assume output files are there")
+      ("t,type",
+       "Data type, supported are poc, hype, asf. Use asf if you process Sentinel-1 data from ASF on demand processing. ",
+       cxxopts::value<std::string>()->default_value("debug"))
+      ("y,strategy", "Strategy how to pick flood classes. Only applicable to 2D algorithm",
+       cxxopts::value<std::string>()->default_value("vv"));
 
     auto userInput = options.parse(argc, argv);
-    auto algo = userInput["algorithm"].as<std::string>();
-    auto strategy = userInput["strategy"].as<std::string>();
+
+    // required parameters
+    if (!userInput.count("hydro")) {
+      std::cout << "Path to water level data not provided, use -h option. Program will quit\n";
+      return 0;
+    }
     auto hydroDataCsvFile = userInput["hydro"].as<std::string>();
+
+    if (!userInput.count("threshold")) {
+      std::cout << "Search space not provided, use -n option. Program will quit\n";
+      return 0;
+    }
     auto thresholdSequence = userInput["threshold"].as<std::vector<std::string>>();
+
+    if (!userInput.count("epsg")) {
+      std::cout << "EPSG not provided, use -p option. Program will quit\n";
+      return 0;
+    }
     auto epsgCode = userInput["epsg"].as<std::string>();
 
-    if (epsgCode == "none") {
-        std::cout << "EPSG not provided, use -p option. Program will quit\n";
-        return 0;
-    }
+    auto algo = userInput["algorithm"].as<std::string>();
+    auto strategy = userInput["strategy"].as<std::string>();
 
     // we defaults to 1D version.
     bool isSinglePolVersion = true;
@@ -517,54 +540,57 @@ int main(int argc, char **argv) {
         cacheOnly = true;
         // Choosing this path, we ASSUME .floodsar-cache/cropped folder is healthy and contains images...
     } else {
-        auto dirname = userInput["directory"].as<std::string>();
-        auto datasetType = userInput["type"].as<std::string>();
-        auto rasterExtension = userInput["extension"].as<std::string>();
+      // Te sa also wymagane:
+      auto dirname = userInput["directory"].as<std::string>();
+      auto datasetType = userInput["type"].as<std::string>();
+      auto rasterExtension = userInput["extension"].as<std::string>();
 
-        RasterInfoExtractor *extractor;
+      // Simple, candidates are the files that have VV or VH string inside;
 
-        if (datasetType == "poc") {
-            MinimalExampleExtractor e;
-            extractor = &e;
-            std::cout << "Using PoC minimal extractor...\n";
-        } else if (datasetType == "hype") {
-            HypeExtractor e;
-            extractor = &e;
-            std::cout << "Using Hyp3 extractor...\n";
-        } else if (datasetType == "asf") {
-            AsfExtractor e;
-            extractor = &e;
-            std::cout << "Using ASF extractor...\n";
-        } else if (datasetType == "debug") {
-            DebugExtractor e;
-            extractor = &e;
-            std::cout << "Using debugging extractor...\n";
-        } else {
-            std::cout << "unsupported extractor...\n";
-        }
+      RasterInfoExtractor *extractor;
 
-        std::cout << "floodsar: dirname is: " << dirname << '\n';
+      if (datasetType == "poc") {
+        MinimalExampleExtractor e;
+        extractor = &e;
+        std::cout << "Using PoC minimal extractor...\n";
+      } else if (datasetType == "hype") {
+        HypeExtractor e;
+        extractor = &e;
+        std::cout << "Using Hyp3 extractor...\n";
+      } else if (datasetType == "asf") {
+        AsfExtractor e;
+        extractor = &e;
+        std::cout << "Using ASF extractor...\n";
+      } else if (datasetType == "debug") {
+        DebugExtractor e;
+        extractor = &e;
+        std::cout << "Using debugging extractor...\n";
+      } else {
+        std::cout << "unsupported extractor...\n";
+      }
 
-        std::vector<RasterInfo> rasterPathsBeforeMosaicking = readRasterDirectory(dirname, rasterExtension, extractor);;
-        std::vector<RasterInfo> rasterPathsAfterMosaicking;
+      std::cout << "floodsar: dirname is: " << dirname << '\n';
 
-        std::cout << "floodsar: found " << rasterPathsBeforeMosaicking.size()
-                  << "rasters. Now finding dups & mosaicking \n";
+      std::vector<RasterInfo> rasterPathsBeforeMosaicking = readRasterDirectory(dirname, rasterExtension, extractor);
+      std::vector<RasterInfo> rasterPathsAfterMosaicking;
 
-        exit(0);
-        // reprojection
-        reprojectIfNeeded(rasterPathsBeforeMosaicking, epsgCode);
-        // mosaicking...
-        performMosaicking(rasterPathsBeforeMosaicking, rasterPathsAfterMosaicking);
+      std::cout << "floodsar: found " << rasterPathsBeforeMosaicking.size()
+        << "rasters. Now finding dups & mosaicking \n";
 
-        std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << " rasters. Cropping... \n";
+      exit(0);
+      // reprojection
+      reprojectIfNeeded(rasterPathsBeforeMosaicking, epsgCode);
+      // mosaicking...
+      performMosaicking(rasterPathsBeforeMosaicking, rasterPathsAfterMosaicking);
 
-        auto areaFilePath = userInput["aoi"].as<std::string>();
-        auto areaOfInterestDataset = static_cast<GDALDataset *>(GDALOpen(areaFilePath.c_str(), GA_ReadOnly));
-        std::cout << areaFilePath + "\n";
-        std::cout << rasterPathsAfterMosaicking[0].absolutePath + "\n";
+      std::cout << "floodsar: after mosaicking: " << rasterPathsAfterMosaicking.size() << " rasters. Cropping... \n";
 
-        cropRastersToAreaOfInterest(rasterPathsAfterMosaicking, areaOfInterestDataset);
+      auto areaFilePath = userInput["aoi"].as<std::string>();
+      auto areaOfInterestDataset = static_cast<GDALDataset *>(GDALOpen(areaFilePath.c_str(), GA_ReadOnly));
+      std::cout << areaFilePath + "\n";
+      std::cout << rasterPathsAfterMosaicking[0].absolutePath + "\n";
+
+      cropRastersToAreaOfInterest(rasterPathsAfterMosaicking, areaOfInterestDataset);
     }
 
     HydroDataReader hydroReader;
