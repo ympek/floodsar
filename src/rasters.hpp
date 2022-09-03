@@ -57,6 +57,7 @@ void cropToZone(BoundingBox zoneBBox, RasterInfo info)
 
   command.append(".floodsar-cache/cropped/resampled__" + polToString(info.pol) + "_" + info.date);
 
+  std::cout << command << "\n";
   std::system(command.c_str());
 }
 
@@ -76,8 +77,8 @@ void cropRastersToAreaOfInterest(std::vector<RasterInfo>& rasterPaths, GDALDatas
   for (int i = 0; i < rasterPaths.size(); i++) {
     std::cout << i << ". process " << rasterPaths.at(i).absolutePath << '\n';
     // non-threaded v for debugging:
-    // cropToZone(zoneBB, rasterPaths.at(i));
-    threads.push_back(std::thread(cropToZone, zoneBB, rasterPaths.at(i)));
+    cropToZone(zoneBB, rasterPaths.at(i));
+    // threads.push_back(std::thread(cropToZone, zoneBB, rasterPaths.at(i)));
   }
 
   for (auto &th : threads) {
