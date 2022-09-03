@@ -36,7 +36,7 @@ BoundingBox getRasterBoundingBox(GDALDataset* raster) {
 void cropToZone(BoundingBox zoneBBox, RasterInfo info)
 {
   std::string command = "gdal_translate";
-  command.append(" -r bilinear -projwin_srs " + info.proj4+" -projwin ");
+  command.append(" -strict -r bilinear -outsize 360 241 -projwin_srs " + info.proj4+" -projwin ");
   command.append(std::to_string(zoneBBox.upperLeftX));
   command.append(" ");
   command.append(std::to_string(zoneBBox.upperLeftY));

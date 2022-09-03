@@ -4,14 +4,13 @@ Software package for flood extent mapping using SAR imagery time series and rive
 
 ## Prerequisites:
 
-
 ### Software
 
 Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
 
 Install dependencies required to build:
 
-```apt install build-essential g++ make libgdal-dev```
+```apt install build-essential g++ cmake ninja libgdal-dev```
 
 Clone the repository:
 
@@ -21,16 +20,19 @@ Enter the directory:
 
 ```cd floodsar```
 
-Build floodsar and mapper:
+Use build script to build:
 
 ```
-make
-make mapper
+./build.sh
 ```
 
-You should see binaries inside the directory.
+Then run with:
 
-### Data
+```
+build/floodsar <options>
+```
+
+### Data 
 * SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 100 dual-pol images or more)
 * Water elevations from river gauge in the area (CSV file with dates and values is expected)
 * Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values dont matter. If you have already cropped images at hand, this step can be skipped.
@@ -102,3 +104,8 @@ Here is comprehesive reference of available options.
 ```
 ./floodsar --cache-only --algorithm 1D
 ```
+
+# Tips, FAQ
+
+Q: My images are ZIP archives i.e. I have a bunch of .zip files in the folder. Will the program recognize them and load the rasters?
+A: No. You have to unzip the files first. But this is easy, just enter the folder and type `unzip '*.zip'` (assuming you have unzip installed, if not - install it). Now you can feed the folder to floodsar.
