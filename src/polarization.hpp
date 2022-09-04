@@ -2,12 +2,15 @@
 
 #include <iostream>
 
-enum class Polarization {
+enum class Polarization
+{
   VH,
   VV
 };
 
-std::string polToString(Polarization pol) {
+std::string
+polToString(Polarization pol)
+{
   if (pol == Polarization::VV) {
     return "VV";
   } else if (pol == Polarization::VH) {
@@ -17,12 +20,13 @@ std::string polToString(Polarization pol) {
   }
 }
 
-Polarization stringToPol(std::string str) {
+Polarization
+stringToPol(std::string str)
+{
   Polarization pol;
   if (str == "VH") {
     pol = Polarization::VH;
-  }
-  else if (str == "VV") {
+  } else if (str == "VV") {
     pol = Polarization::VV;
   } else {
     std::cout << "Sth wrong\n";

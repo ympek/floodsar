@@ -1,17 +1,34 @@
 #pragma once
 
-#include <vector>
-#include <iostream>
-#include <cmath>
 #include "types.hpp"
+#include <chrono>
+#include <cmath>
+#include <iostream>
+#include <vector>
+
+std::string
+getCurrentTimeString()
+{
+  auto t = std::chrono::system_clock::now();
+  // TODO implement
+  return "_";
+}
+
+#define LOG(msg, x...)                                                         \
+  do {                                                                         \
+    fprintf(stdout, "[%s] " msg "\n", getCurrentTimeString().c_str(), ##x);    \
+    fflush(stdout);                                                            \
+  } while (0)
 
 // I am not convinced it should really be returned by value ugh
-std::vector<double> createSequence(double start, double end, double step) {
+std::vector<double>
+createSequence(double start, double end, double step)
+{
   std::vector<double> outputVector;
 
   double i = start;
 
-  while(i <= end) {
+  while (i <= end) {
     outputVector.push_back(i);
     i += step;
   }
@@ -20,16 +37,17 @@ std::vector<double> createSequence(double start, double end, double step) {
 }
 
 // calculate Pearson correlation of two equally sized vectors
-double calcCorrelationCoeff(
-    std::vector<unsigned int>& floodedAreaVals,
-    std::vector<double>& riverGaugeVals)
+double
+calcCorrelationCoeff(std::vector<unsigned int>& floodedAreaVals,
+                     std::vector<double>& riverGaugeVals)
 {
-  auto numVals   = floodedAreaVals.size();
-  auto numVals2  = riverGaugeVals.size();
+  auto numVals = floodedAreaVals.size();
+  auto numVals2 = riverGaugeVals.size();
 
   if (numVals != numVals2) {
     // to be transformed into actual runtime error
-    std::cout << "ERROR: vectors not equal in size - " << numVals << " vs " << numVals2 << "\n";
+    std::cout << "ERROR: vectors not equal in size - " << numVals << " vs "
+              << numVals2 << "\n";
   }
 
   double sumX, sumY, sumXY, squareSumX, squareSumY;
@@ -45,21 +63,29 @@ double calcCorrelationCoeff(
     squareSumY += std::pow(y, 2);
   }
 
-  double corr = (numVals * sumXY - sumX * sumY)
-    / std::sqrt((numVals * squareSumX - sumX * sumX) * (numVals * squareSumY - sumY * sumY));
+  double corr = (numVals * sumXY - sumX * sumY) /
+                std::sqrt((numVals * squareSumX - sumX * sumX) *
+                          (numVals * squareSumY - sumY * sumY));
 
   // std::cout << "corrcelel: " << corr << "\n";
   return corr;
 }
 
-Date hydrologicalToNormalDate(std::string_view year, std::string_view month, std::string_view day) {
+Date
+hydrologicalToNormalDate(std::string_view year,
+                         std::string_view month,
+                         std::string_view day)
+{
   // we want to have format like 20190221
   // the dates have " " around them so strip them:
   // std::cout << year << month << day << std::endl;
-  year.remove_prefix(1);  year.remove_suffix(1);
-  month.remove_prefix(1); month.remove_suffix(1);
-  day.remove_prefix(1);   day.remove_suffix(1);
-  int numericYear  = std::stoi(static_cast<std::string>(year));
+  year.remove_prefix(1);
+  year.remove_suffix(1);
+  month.remove_prefix(1);
+  month.remove_suffix(1);
+  day.remove_prefix(1);
+  day.remove_suffix(1);
+  int numericYear = std::stoi(static_cast<std::string>(year));
   int numericMonth = std::stoi(static_cast<std::string>(month));
   int numericDay = std::stoi(static_cast<std::string>(day));
 
@@ -81,10 +107,12 @@ Date hydrologicalToNormalDate(std::string_view year, std::string_view month, std
     realYear--;
   }
 
-  std::string outMonth = realMonth < 10 ? "0" + std::to_string(realMonth) : std::to_string(realMonth);
-  std::string outDay = numericDay < 10 ? "0" + std::to_string(numericDay) : std::to_string(numericDay);
+  std::string outMonth = realMonth < 10 ? "0" + std::to_string(realMonth)
+                                        : std::to_string(realMonth);
+  std::string outDay = numericDay < 10 ? "0" + std::to_string(numericDay)
+                                       : std::to_string(numericDay);
 
-  Date out {};
+  Date out{};
   out += std::to_string(realYear);
   out += outMonth;
   out += outDay;
@@ -92,4 +120,13 @@ Date hydrologicalToNormalDate(std::string_view year, std::string_view month, std
   // std::cout << realYear << realMonth << numericDay << std::endl;
 
   return out;
+}
+
+void
+printMap(const std::map<std::string, double>& m)
+{
+  for (const auto& [key, value] : m) {
+    std::cout << '[' << key << "] = " << value << "\n";
+  }
+  std::cout << '\n';
 }

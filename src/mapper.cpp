@@ -1,34 +1,36 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <filesystem>
-#include <cmath>
-#include "gdal/gdal_priv.h"
-#include "gdal/cpl_conv.h" // for CPLMalloc()
-#include "gdal/ogrsf_frmts.h"
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <thread>
+#include "../vendor/cxxopts.hpp"
 #include "XYPair.hpp"
+#include "gdal/cpl_conv.h" // for CPLMalloc()
+#include "gdal/gdal_priv.h"
+#include "gdal/ogrsf_frmts.h"
 #include "rasters.hpp"
 #include "utils.hpp"
 #include <algorithm>
-#include "../vendor/cxxopts.hpp"
+#include <cmath>
+#include <fcntl.h>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <thread>
 
 namespace fs = std::filesystem;
 
-int main(int argc, char** argv) {
+int
+main(int argc, char** argv)
+{
   GDALAllRegister();
 
   cxxopts::Options options("Floodsar::Mapper", " - command line options");
 
-  options.add_options()
-    ("c,classes", "all classes", cxxopts::value<int>())
-    ("f,floods", "flood classes", cxxopts::value<int>())
-    ("b,base", "use base algo, provide polarization", cxxopts::value<std::string>())
-    ;
+  options.add_options()("c,classes", "all classes", cxxopts::value<int>())(
+    "f,floods", "flood classes", cxxopts::value<int>())(
+    "b,base",
+    "use base algo, provide polarization",
+    cxxopts::value<std::string>());
 
   int numAllClassess = 2;
   int numFloodClasses = 1;
@@ -36,25 +38,24 @@ int main(int argc, char** argv) {
   std::vector<int> floodClasses;
   std::string pointsFile;
   std::string mapDirectory;
-  std::ifstream datesFile (".floodsar-cache/dates.txt");
+  std::ifstream datesFile(".floodsar-cache/dates.txt");
   std::vector<std::string> dates;
   std::string line;
 
   auto userInput = options.parse(argc, argv);
 
-  if (datesFile.is_open())
-	{
-		while ( getline (datesFile,line) )
-		{
-			dates.push_back(line);
-		}
-	datesFile.close();
-	}
-	else std::cout << "Unable to open ./floodsar-cache/dates.txt";
+  if (datesFile.is_open()) {
+    while (getline(datesFile, line)) {
+      dates.push_back(line);
+    }
+    datesFile.close();
+  } else
+    std::cout << "Unable to open ./floodsar-cache/dates.txt";
 
-  if(!fs::exists("./raster")) {
-	  std::cout << "./.floodsar-cache/cropped/resampled__VV_" + dates[0];
-    fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0], "./raster");
+  if (!fs::exists("./raster")) {
+    std::cout << "./.floodsar-cache/cropped/resampled__VV_" + dates[0];
+    fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0],
+                  "./raster");
   }
 
   if (userInput.count("base")) {
@@ -68,12 +69,13 @@ int main(int argc, char** argv) {
   } else {
     // improved algo mapping.
 
-    numAllClassess  = userInput["classes"].as<int>();
+    numAllClassess = userInput["classes"].as<int>();
     numFloodClasses = userInput["floods"].as<int>();
 
-    std::string floodclassesFile = "./.floodsar-cache/kmeans_outputs/KMEANS_INPUT_cl_"
-      + std::to_string(numAllClassess) + "/" + std::to_string(numAllClassess)
-      + "-clusters.txt_" + std::to_string(numFloodClasses) + "_floodclasses.txt";
+    std::string floodclassesFile =
+      "./.floodsar-cache/kmeans_outputs/KMEANS_INPUT_cl_" +
+      std::to_string(numAllClassess) + "/" + std::to_string(numAllClassess) +
+      "-clusters.txt_" + std::to_string(numFloodClasses) + "_floodclasses.txt";
 
     std::ifstream floodclassesFileStream(floodclassesFile);
 
@@ -85,11 +87,12 @@ int main(int argc, char** argv) {
 
     floodclassesFileStream.close();
 
-    pointsFile = "./.floodsar-cache/kmeans_outputs/KMEANS_INPUT_cl_"
-      + std::to_string(numAllClassess) + "/" + std::to_string(numAllClassess)
-      + "-points.txt";
+    pointsFile = "./.floodsar-cache/kmeans_outputs/KMEANS_INPUT_cl_" +
+                 std::to_string(numAllClassess) + "/" +
+                 std::to_string(numAllClassess) + "-points.txt";
 
-    mapDirectory = "./mapped/" + std::to_string(numAllClassess) + "__" + std::to_string(numFloodClasses) + "/";
+    mapDirectory = "./mapped/" + std::to_string(numAllClassess) + "__" +
+                   std::to_string(numFloodClasses) + "/";
   }
 
   std::string rasterToClassify = "./raster";
@@ -117,8 +120,9 @@ int main(int argc, char** argv) {
   int pointsActual = 0;
   pointsActual += xSize * ySize;
 
-  while(pointsStream >> point) {
-    if (std::find(floodClasses.begin(), floodClasses.end(), point) != floodClasses.end()) {
+  while (pointsStream >> point) {
+    if (std::find(floodClasses.begin(), floodClasses.end(), point) !=
+        floodClasses.end()) {
       buffer[bufferIndex] = 1;
     } else {
       buffer[bufferIndex] = 0;
@@ -128,7 +132,8 @@ int main(int argc, char** argv) {
     if (bufferIndex == words) {
       bufferIndex = 0;
 
-      auto error = rasterBand->RasterIO(GF_Write, 0, 0, xSize, ySize, buffer, xSize, ySize, GDT_Float64, 0, 0);
+      auto error = rasterBand->RasterIO(
+        GF_Write, 0, 0, xSize, ySize, buffer, xSize, ySize, GDT_Float64, 0, 0);
 
       if (error == CE_Failure) {
         std::cout << "[] Could not read raster\n";
