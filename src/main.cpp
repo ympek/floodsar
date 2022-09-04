@@ -699,7 +699,7 @@ main(int argc, char** argv)
         for (auto datasetPath : croppedRasterPaths) {
           auto dataset = static_cast<GDALDataset*>(
             GDALOpen(datasetPath.c_str(), GA_ReadOnly));
-          std::cout << datasetPath + "\n";
+          // std::cout << datasetPath + "\n";
           const unsigned int area = calcFloodedArea(dataset, threshold);
           // std::cout << "area for " << datasetPath << "->" << area << '\n';
           floodedAreaValues.push_back(area);
@@ -716,8 +716,8 @@ main(int argc, char** argv)
       unsigned int bestThrIndex = 0;
 
       for (int i = 0; i < correlations.size(); i++) {
-        std::cout << "THR: " << thresholds.at(i)
-                  << " / COEFF: " << correlations.at(i) << '\n';
+        // std::cout << "THR: " << thresholds.at(i)
+                  // << " / COEFF: " << correlations.at(i) << '\n';
 
         if (bestCorrelation < correlations.at(i)) {
           bestCorrelation = correlations.at(i);

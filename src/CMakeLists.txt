@@ -4,7 +4,7 @@ project(floodsar)
 set(CMAKE_CXX_STANDARD 17)
 
 add_executable(floodsar main.cpp)
-
+add_executable(mapper mapper.cpp)
 # Configure dependencies
 include(FetchContent)
 
@@ -16,3 +16,4 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(cxxopts)
 target_link_libraries(floodsar gdal pthread cxxopts)
+target_link_libraries(mapper gdal pthread cxxopts)

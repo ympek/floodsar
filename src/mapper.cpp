@@ -1,4 +1,4 @@
-#include "../vendor/cxxopts.hpp"
+#include <cxxopts.hpp>
 #include "XYPair.hpp"
 #include "gdal/cpl_conv.h" // for CPLMalloc()
 #include "gdal/gdal_priv.h"
@@ -125,7 +125,7 @@ main(int argc, char** argv)
         floodClasses.end()) {
       buffer[bufferIndex] = 1;
     } else {
-      buffer[bufferIndex] = 0;
+      buffer[bufferIndex] = 2;
     }
     bufferIndex++;
 
