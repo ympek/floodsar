@@ -10,7 +10,7 @@ Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
 
 Install dependencies required to build:
 
-```apt install build-essential g++ cmake ninja libgdal-dev```
+```apt install build-essential g++ cmake ninja-build libgdal-dev```
 
 Clone the repository:
 
