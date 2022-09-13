@@ -26,7 +26,7 @@ const std::string kmeansInputFilename = "KMEANS_INPUT";
 void
 performClusteringInPlace(std::vector<double>& vectorVH,
                          std::vector<double>& vectorVV,
-                         int numClasses)
+                         int numClasses, int maxiter)
 {
 
   std::string outDir = ".floodsar-cache/kmeans_outputs/" + kmeansInputFilename +
@@ -34,7 +34,6 @@ performClusteringInPlace(std::vector<double>& vectorVH,
   fs::create_directory(outDir);
 
   // yeah lets go
-  int maxiter = 50;
   int numPoints = vectorVH.size();
   bool updated = false;
   double best;
@@ -544,13 +543,13 @@ main(int argc, char** argv)
     "c,cache-only",
     "Do not process whole rasters, just use cropped images from cache.")(
     "d,directory",
-    "Path to directory which to search for SAR images",
+    "Path to directory which to search for SAR images.",
     cxxopts::value<std::string>()->default_value(fs::current_path()))(
     "h,hydro",
     "Path to file with hydrological data. Program expects csv.",
     cxxopts::value<std::string>())(
     "e,extension",
-    "Files with this extension will be attempted to be loaded",
+    "Files with this extension will be attempted to be loaded.",
     cxxopts::value<std::string>()->default_value(".tif"))(
     "n,threshold",
     "Comma separated sequence of search space, start,end[,step], e.g.: "
@@ -565,10 +564,16 @@ main(int argc, char** argv)
     "interest. e.g.: EPSG:32630 for UTM 30N.",
     cxxopts::value<std::string>()->default_value("none"))(
     "s,skip-clustering",
-    "Do not perform clustering, assume output files are there")(
+    "Do not perform clustering, assume output files are there.")(
     "y,strategy",
-    "Strategy how to pick flood classes. Only applicable to 2D algorithm",
-    cxxopts::value<std::string>()->default_value("vv"));
+    "Strategy how to pick flood classes. Only applicable to 2D algorithm.",
+    cxxopts::value<std::string>()->default_value("vv"))(
+	"m,maxValue",
+    "Clip VV and VH data to this maximum value, e.g. 0.1,0.5 for VV<0.1 and VH<0.5. If not set than wont clip. Only applicable to 2D algorithm.",
+    cxxopts::value<std::vector<std::string>>()->default_value("none"))(
+    "k,maxiter",
+    "Maximum number of kmeans iteration. Only applicable to 2D algorithm.",
+    cxxopts::value<std::string>()->default_value("10"));
 
   auto userInput = options.parse(argc, argv);
 
@@ -596,12 +601,15 @@ main(int argc, char** argv)
 
   auto algo = userInput["algorithm"].as<std::string>();
   auto strategy = userInput["strategy"].as<std::string>();
+  auto maxiter = std::stoi(userInput["maxiter"].as<std::string>());
 
   // we defaults to 1D version.
   bool isSinglePolVersion = true;
   if (algo == "2D") {
     isSinglePolVersion = false;
   }
+  
+  auto maxValue = userInput["maxValue"].as<std::vector<std::string>>();
 
   bool cacheOnly = false;
   if (userInput.count("cache-only")) {
@@ -619,6 +627,7 @@ main(int argc, char** argv)
       return 0;
     }
     auto areaFilePath = userInput["aoi"].as<std::string>();
+
 
     RasterInfoExtractor* extractor;
     AsfExtractor e;
@@ -820,14 +829,31 @@ main(int argc, char** argv)
 
     datesFile.close();
     ofs.close();
-
+	
+	if(maxValue[0] != "none") {
+		std::vector<double> maxValueDbl(maxValue.size());
+		std::transform(maxValue.begin(),
+					   maxValue.end(),
+					   maxValueDbl.begin(),
+					   [](const std::string& val) { return std::stod(val); });
+		std::cout << "clipping max values to VV, VH:\n";
+		std::cout << std::to_string(maxValueDbl[0]) + ", ";
+		std::cout << std::to_string(maxValueDbl[1]) + ", ";
+		std::cout << "\n";
+		
+		for (int i=0; i<vvAllPixelValues.size(); i++) if(vvAllPixelValues[i] > maxValueDbl[0]) vvAllPixelValues[i]=maxValueDbl[0];
+		for (int i=0; i<vhAllPixelValues.size(); i++) if(vhAllPixelValues[i] > maxValueDbl[1]) vhAllPixelValues[i]=maxValueDbl[1];
+	} else {
+		std::cout << "No clipping VV and VH values.\n";
+	}
+	
     std::cout << "Input ready. Have " << elevations.size()
               << " pairs of images matched with hydro data\n";
 
     if (!userInput.count("skip-clustering")) {
       for (int i : numClassesToTry) {
         // performClusteringViaKMeansBinary(kmeansInputFilename, i);
-        performClusteringInPlace(vhAllPixelValues, vvAllPixelValues, i);
+        performClusteringInPlace(vhAllPixelValues, vvAllPixelValues, i, maxiter);
       }
     }
 
