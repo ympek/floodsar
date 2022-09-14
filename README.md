@@ -1,6 +1,6 @@
 # floodsar
 
-Software package for flood extent mapping using SAR imagery time series and river gauge data. Note: this software is work in progress.
+Software package for flood extent mapping using SAR imagery time series and river gauge data.
 
 ## Prerequisites:
 
@@ -10,7 +10,7 @@ Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
 
 Install dependencies required to build:
 
-```apt install build-essential g++ cmake ninja-build libgdal-dev```
+```sudo apt install build-essential g++ cmake ninja-build libgdal-dev```
 
 Clone the repository:
 
@@ -33,33 +33,17 @@ build/floodsar <options>
 ```
 
 ### Data 
-* SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 100 dual-pol images or more)
-* Water elevations from river gauge in the area (CSV file with dates and values is expected)
-* Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values dont matter. If you have already cropped images at hand, this step can be skipped.
+* SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 20 dual-pol images or more)
+* Water levels or discharge data from a river gauge in the area (CSV file with dates and values is expected)
+* Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values dont matter. If you have already cropped images, this step can be skipped.
 
 ## Usage / use cases
 
 ### Basic
 
-If you have uncropped/unprepared time series, the program will have to crop the images to area of interest first. If more than one image has particular date, the program will perform mosaicking. There is also option of reprojecting the images, not yet implemented as a command line switch.
+If you have uncropped/unprepared SAR time series, the program will have to crop the images to area of interest first. If more than one image has the same date, the program will perform mosaicking of the files. There is also option of reprojecting the images implemented as a command line switch.
 
-Since it would be inefficient to copy all the images into the Docker container, we use Docker volumes to mount local directory. Prepare folder with the images, and run the container this way:
-
-```docker run -d floodsar_img --name floodsar -v /path/to/images/:/app/sardata/```
-
-Now files are available inside container in /app/sardata/ directory. Now, let's prepare hydrological data csv and AOI image and copy them over to container:
-
-```docker cp /path/to/hydroData.csv floodsar:/app/hydro.csv```
-
-```docker cp /path/to/areaOfInterest.tif floodsar:/app/area.tif```
-
-Then we can run the program, for example for Sentinel-1 data processed via Hyp3:
-
-```
-./floodsar --type hype --aoi area.tif --hydro hydro.csv --directory sardata --extension .tif --algorithm 1D
-```
-
-Any subsequent runs should be executed with `--cache-only`, as we have to crop images only once for a given dataset.
+The program will keep the pre-processed images in cache, therefor any subsequent runs should be executed with `--cache-only`, as we have to crop images only once for a given dataset.
 
 ### Using pre-cropped imagery
 
