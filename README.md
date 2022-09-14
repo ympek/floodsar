@@ -83,7 +83,7 @@ The program has two algorithms for flood mapping (`-a` parameter) 1D and 2D:
 
 The program will keep the pre-processed images in cache, therefor any subsequent runs should be executed with `--cache-only` or '-c', as we have to crop images only once for a given dataset. In this case the SAR images directoy path `-d` wont be required to run the program.
 
-###Example of basic use
+### Example
 
 To run the program with the 1D algorithm, search space 0.001 to 0.1 with a step of 0.001, a relative path to a AOI file: data/aoi.tif, a relative path to a .csv file: data/levels.csv, a relative path to SAR imagery directory with .tif images: data/sarInput, and the UTM 30N (EPSG:32630) coordinate system use:
 
