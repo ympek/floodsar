@@ -74,7 +74,7 @@ The program has two algorithms for flood mapping (`-a` parameter) 1D and 2D:
 
 * The default 1D algorithm looks for an optimal threshold below which the SAR pixels values are labeled as "flooded". The detailed description of the algorithm is provided in [Berezowski et al. 2019](https://ieeexplore.ieee.org/abstract/document/8899239). In short, the optimal threshold is chosen by the highes correlation of the labeled flooding area and the river gauge observations from the .csv file. Note: this is _not_ the Otsu method. Please set the following parameters for `-a 1D` algorithm:
    - `-n`, the comma-separated search space: `start,end,step`. If the SAR images are in dB a good starting point would be `-n 0.001,0.2,0.001` to search for the threshold value from 0.001 to 0.2 with a step of 0.001.
-* The 2D algorithm performs a k-means clustering of a two dimentional (VV and VH) dataset containing all SAR images. In the second step an optimal set of clusters that has a highest correlation with the river gauge observation is found. This algorithm is _similar_ to multiclass Otsu due to utilization of k-means, but works on multiple images at the same time and points out which cluster combinations are the best for flood labeling. The set may have one or more flood clusters depending on the case. The remaining culsters are set as non-flooded clusters. Please set the following parameters for `-a 2D` algorithm:
+* The 2D algorithm performs a k-means clustering of a two dimentional (VV and VH) dataset containing all SAR images. In the second step an optimal set of clusters that has a highest correlation with the river gauge observation is chosen. This algorithm is _similar_ to multiclass Otsu due to utilization of k-means, but works on multiple images at the same time and points out which cluster combinations are the best for flood labeling. The set may have one or more clusters labeled as flooded depending on the case. The remaining culsters are labeled as non-flooded. Please set the following parameters for `-a 2D` algorithm:
    - `-n`, the comma-separated number of target clusters to try with kmeans: `start,end`. A good starting point would be `-n 2,5` to test kmeans results with 2, 3, 4, and 5 target clusters.
    - `-m`, the comma-separated list of maximum backscattering value for clustering: `VV,VH`. This is an important parameter, which limits the two-dimentional space in which the clustering is performed to a maximum value separtely for each polarization. If too high values are present in the dataset the kmeans will have dificulties to find properly flooded clusters. A good maximum values in case of dB data would be `-m 0.1,05` to set maximum value of 0.1 for VV and 0.5 for VH data. Mind that if data is in linear power or other units a different set of maximum will be required than in this example. The best is to analyze the histogram of few VV and VH images before setting this parameter.
    - `-k`, the maximum number of k-means iterations. A too low number, e.g. 2, will result in poor clusteriong and a too high number will take a long time to process. A good starting point would be the default `-k 10`. After run with 10 iteration one may check if increasing `-k` results in higher correlations. 
@@ -84,6 +84,7 @@ The program has two algorithms for flood mapping (`-a` parameter) 1D and 2D:
 The program will keep the pre-processed images in cache, therefor any subsequent runs should be executed with `--cache-only` or '-c', as we have to crop images only once for a given dataset. In this case the SAR images directoy path `-d` wont be required to run the program.
 
 ###Example of basic use
+
 To run the program with the 1D algorithm, search space 0.001 to 0.1 with a step of 0.001, a relative path to a AOI file: data/aoi.tif, a relative path to a .csv file: data/levels.csv, a relative path to SAR imagery directory with .tif images: data/sarInput, and the UTM 30N (EPSG:32630) coordinate system use:
 
 `cd build` to go to the directory with the floodsar executable
@@ -106,7 +107,7 @@ To re-run the algorithm with a broader search space and the cached data from the
 
 To run the program with the 2D algorithm, number of k-means cluster from 3 to 6 and 11 iterations, maximum value of VV=0.2 and maximum value of VH=0.4, a relative path to a AOI file: data/aoi.tif, a relative path to a .csv file: data/levels.csv, a relative path to SAR imagery directory with .tif images: data/sarInput, and the UTM 30N (EPSG:32630) coordinate system use:
 
-`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -p EPSG:32630 -s TODO -y TODO`
+`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630 -s TODO -y TODO`
 
 to create output flood maps **TODO**:
 
