@@ -43,7 +43,7 @@ build/floodsar <options>
 
 If you have uncropped/unprepared SAR time series, the program will have to crop the images to area of interest first (`-o` parameter). If more than one image has the same date, the program will perform mosaicking of the files. There is also option of reprojecting the images implemented as a command line parameter (`-e`).
 
-The SAR images time series should be stored in one directery (provided using the `-d` parameter), should have the same extension and a specified pattern of names as in [ASF RTC](https://hyp3-docs.asf.alaska.edu/guides/rtc_product_guide/#naming-convention) naming convention:
+The SAR images time series should be stored in one directory (provided using the `-d` parameter), should have the same extension and a specified pattern of names as in [ASF RTC](https://hyp3-docs.asf.alaska.edu/guides/rtc_product_guide/#naming-convention) naming convention:
 
 `S1x_yy_aaaaaaaaTbbbbbb_ppo_RTCzz_u_defklm_ssss_pol.extension`
 
@@ -54,7 +54,7 @@ where the key elements are:
 
 In fact the program will look for the specified above keywords by splitting the file name at the places of the underscore character (`_`), therfore if your files do not come form the ASF RTC on demand processing just rename them to match the pattern above while keeping the appropite date, polarization and extension.
 
-The .csv file (provided using the `-h` parameter) with the river gauge data should have two comma-separated columns without any headder (no colum names). The first column sould have a YYYYMMDD date of the observation and the second column should have a numerical value of the observation (water level or discharge), e.g:
+The .csv file (provided using the `-h` parameter) with the river gauge data should have two comma-separated columns without any header (no column names). The first column sould have a YYYYMMDD date of the observation and the second column should have a numerical value of the observation (water level or discharge), e.g:
 
 ```
 20150121,1.2
