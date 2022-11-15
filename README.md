@@ -109,9 +109,11 @@ To run the program with the 2D algorithm, number of k-means cluster from 3 to 6 
 
 `./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630`
 
-to create output flood maps **TODO**:
+to create output flood maps, use `mapper` binary. Mapper expects two arguments, `-c` (number of all classes) and `-f` (number of classes marked as flooded). For example, to create maps for the case that we have 3 classes and one of them is flooded, type:
 
-`/mapper TODO`
+`/mapper -c 3 -f 1`
+
+Generated maps will be available in `./mapped` folder. They can be loaded into GIS software (e.g. QGIS) to examine them.
 
 ### Using manually pre-cropped imagery
 
@@ -150,9 +152,9 @@ Here is comprehesive reference of available options for `floodsar`.
 Here is comprehesive reference of available options for `mapper`.
 | Option       |      Description      | Default|
 |:-------------|:-------------|:-------------:|
-| --base<br />-b |  use the 1D algorithm, provide polarization VV or VH |--|
-| --classes<br />-c| use the 2D algorithm and **TODO**|--|
-| --floods<br />-f|  use the 2D algorithm and **TODO**|--|
+| --base<br />-b |  use output from the 1D algorithm, provide polarization VV or VH |--|
+| --classes<br />-c| use output from the 2D algorithm, provide number of classes for mapping. Always use with `-f` |--|
+| --floods<br />-f|  use output from the 2D algorithm, provide number of flood classes. Always use with `-c` |--|
 
 
 # Tips, FAQ
