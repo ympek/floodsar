@@ -81,7 +81,7 @@ The program has two algorithms for flood mapping (`-a` parameter) 1D and 2D:
    - `-y`, cluster centroid comparing strategy. Possible values: vh, vv, sum. Once clustering is done, the program is supposed to label N 'darkest' clusters as flooded. But how to determine if one cluster is 'darker' than the other? This parameter determines it. If value is 'vh', we sort centroids based on the value in VH polarization; 'vv' works analogously for VV polarization. 'sum' value means we compare centroids based on the sum i.e. centroid1 is darker than centroid2 if c1.vh + c1.vv < c2.vh + c2.vv. Best is to check results from all strategies.
    - `-s`, --skip-clustering - this option can be used to speed up checking different strategies (`-y` parameter). Clustering results are cached - so if we want to change the sorting strategy, we don't have to repeat K-means - add this parameter to use K-means outputs cached on disk, so results will be instant.
 
-The program will keep the pre-processed images in cache, therefor any subsequent runs should be executed with `--cache-only` or '-c', as we have to crop images only once for a given dataset. In this case the SAR images directoy path `-d` wont be required to run the program.
+The program will keep the pre-processed images in cache, therefore any subsequent runs should be executed with `--cache-only` or '-c', as we have to crop images only once for a given dataset. In this case the SAR images directoy path `-d` wont be required to run the program.
 
 ### Example
 
@@ -107,7 +107,7 @@ To re-run the algorithm with a broader search space and the cached data from the
 
 To run the program with the 2D algorithm, number of k-means cluster from 3 to 6 and 11 iterations, maximum value of VV=0.2 and maximum value of VH=0.4, a relative path to a AOI file: data/aoi.tif, a relative path to a .csv file: data/levels.csv, a relative path to SAR imagery directory with .tif images: data/sarInput, and the UTM 30N (EPSG:32630) coordinate system use:
 
-`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630 -s TODO -y TODO`
+`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630`
 
 to create output flood maps **TODO**:
 
