@@ -111,7 +111,7 @@ To run the program with the 2D algorithm, number of k-means cluster from 3 to 6 
 
 to create output flood maps, use `mapper` binary. Mapper expects two arguments, `-c` (number of all classes) and `-f` (number of classes marked as flooded). For example, to create maps for the case that we have 3 classes and one of them is flooded, type:
 
-`/mapper -c 3 -f 1`
+`./mapper -c 3 -f 1`
 
 Generated maps will be available in `./mapped` folder. They can be loaded into GIS software (e.g. QGIS) to examine them.
 
