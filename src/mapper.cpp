@@ -26,14 +26,17 @@ main(int argc, char** argv)
 
   cxxopts::Options options("Floodsar::Mapper", " - command line options");
 
-  options.add_options()("c,classes", "all classes", cxxopts::value<int>())(
+    options.add_options()("c,classes", "all classes", cxxopts::value<int>())(
     "f,floods", "flood classes", cxxopts::value<int>())(
     "b,base",
     "use base algo, provide polarization",
-    cxxopts::value<std::string>());
+    cxxopts::value<std::string>())(
+    "a,auto",
+    "automatically use best k-means results");
 
   int numAllClassess = 2;
   int numFloodClasses = 1;
+  int aa;
 
   std::vector<int> floodClasses;
   std::string pointsFile;
@@ -68,9 +71,15 @@ main(int argc, char** argv)
     mapDirectory = "./mapped/base_algo_pol_" + pol + "/";
   } else {
     // improved algo mapping.
-
-    numAllClassess = userInput["classes"].as<int>();
-    numFloodClasses = userInput["floods"].as<int>();
+    if (userInput.count("auto")) 
+       {
+        std::ifstream bestClassStream(".floodsar-cache/kmeans_outputs/best.txt");
+        bestClassStream >> numAllClassess >> numFloodClasses;
+        std::cout <<"Auto best classes\n k-means classes: " + std::to_string(numAllClassess) + ", Flood classes: " + std::to_string(numFloodClasses) +"\n";
+       } else {
+        numAllClassess = userInput["classes"].as<int>();
+        numFloodClasses = userInput["floods"].as<int>();
+       }
 
     std::string floodclassesFile =
       "./.floodsar-cache/kmeans_outputs/KMEANS_INPUT_cl_" +
@@ -109,6 +118,7 @@ main(int argc, char** argv)
   std::string mapPath = mapDirectory + dates[dateIndex] + ".tif";
   std::filesystem::copy_file(rasterToClassify, mapPath);
 
+  int NoDataValue = -1;
   auto raster = static_cast<GDALDataset*>(GDALOpen(mapPath.c_str(), GA_Update));
   auto rasterBand = raster->GetRasterBand(1);
   unsigned int xSize = rasterBand->GetXSize();
@@ -125,7 +135,7 @@ main(int argc, char** argv)
         floodClasses.end()) {
       buffer[bufferIndex] = 1;
     } else {
-      buffer[bufferIndex] = 2;
+      buffer[bufferIndex] = 0;
     }
     bufferIndex++;
 
@@ -141,6 +151,12 @@ main(int argc, char** argv)
         std::cout << "saved: " + mapPath + '\n';
       }
 
+      auto noDataError = rasterBand->SetNoDataValue(NoDataValue);
+      if(noDataError == CE_Failure) std::cout << "Could not set NoDataValue\n";
+
+      raster->FlushCache();
+      GDALClose(raster);
+
       dateIndex++;
       if (dateIndex >= dates.size()) {
         std::cout << "Its time to stop. \n";
@@ -148,8 +164,6 @@ main(int argc, char** argv)
       }
       mapPath = mapDirectory + dates[dateIndex] + ".tif";
       std::filesystem::copy_file(rasterToClassify, mapPath);
-      raster->FlushCache();
-      GDALClose(raster);
 
       raster = static_cast<GDALDataset*>(GDALOpen(mapPath.c_str(), GA_Update));
       rasterBand = raster->GetRasterBand(1);

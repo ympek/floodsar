@@ -33,7 +33,7 @@ performClusteringInPlace(std::vector<double>& vectorVH,
                        "_cl_" + std::to_string(numClasses);
   fs::create_directory(outDir);
 
-  // yeah lets go
+  //  initialization
   int numPoints = vectorVH.size();
   bool updated = false;
   double best;
@@ -84,7 +84,7 @@ performClusteringInPlace(std::vector<double>& vectorVH,
       }
     }
 
-    // przeszlismy kazdy punkt. teraz sprawdzmy czy byly update y
+    // After checking everywhere we look if there was an update
     if (!updated)
       break;
 
@@ -507,7 +507,7 @@ calculateFloodedAreasFromKMeansOutput(
   auto floodClasses =
     createFloodClassesList(clustersPath, floodClassesNum, strategy);
 
-  // uh oh... programming... i love this shit...
+  // loop for kmeans
   int iterations = 0;
   unsigned int sum = 0;
   std::ifstream infile(pointsPath);
@@ -780,7 +780,7 @@ main(int argc, char** argv)
 
     std::cout << "Will create input file for K-Means\n";
 
-    std::vector<double> elevations; // inaczej water levels
+    std::vector<double> elevations; // these are water levels or discharges
     std::vector<std::string> croppedRasterPaths;
     datesFile.open(".floodsar-cache/dates.txt");
 
@@ -888,6 +888,12 @@ main(int argc, char** argv)
         indexForLogs++;
       }
     }
+
+    const std::string bestClassPath =".floodsar-cache/kmeans_outputs/best.txt";
+    std::ofstream ofsBestClass;
+    ofsBestClass.open(bestClassPath, std::ofstream::out);
+    ofsBestClass <<  bestMaxClasses << " " << bestFloodClasses << "\n";
+    ofsBestClass.close();
 
     std::cout << "RESULTS: Best config is: coeff/all classes/flood classes "
               << bestCoeff << " / " << bestMaxClasses << " / "

@@ -77,8 +77,8 @@ cropRastersToAreaOfInterest(std::vector<RasterInfo>& rasterPaths,
 
   // the overhead of creating threads might be a problem later when there is
   // more rasters to process Ideally, there should be some sort of queue system
-  // and number of threads fixed on hardware_concurrency I don't know if I will
-  // be able to implement this properly in such short time.
+  // and number of threads fixed on hardware_concurrency
+  // now it works in a number of tests
   std::vector<std::thread> threads;
 
   std::cout << "processing " << rasterPaths.size() << " rasters \n";
