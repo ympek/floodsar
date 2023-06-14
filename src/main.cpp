@@ -111,7 +111,7 @@ performClusteringInPlace(std::vector<double>& vectorVH,
   }
 
   // dump result.
-  std::cout << "Finished clustering. Dump result.";
+  std::cout << "Finished clustering. Dump result...\n";
   const std::string clustersPath =
     outDir + "/" + std::to_string(numClasses) + "-clusters.txt";
   const std::string pointsPath =
@@ -130,6 +130,156 @@ performClusteringInPlace(std::vector<double>& vectorVH,
   for (int i = 0; i < numPoints; i++) {
     ofsPoints << clusterAssignments[i] << "\n";
   }
+}
+
+
+void
+performClusteringInPlaceFraction(std::vector<double>& vectorVH,
+    std::vector<double>& vectorVV,
+    int numClasses, int maxiter, double frac)
+{
+
+    std::string outDir = ".floodsar-cache/kmeans_outputs/" + kmeansInputFilename +
+        "_cl_" + std::to_string(numClasses);
+    fs::create_directory(outDir);
+
+    //  initialization
+    int numPoints = vectorVH.size();
+    int numPointsFrac = round(numPoints * frac);
+    bool updated = false;
+    double best;
+
+
+    if (numPointsFrac < 1) numPointsFrac = 10;
+    if (numPointsFrac > numPoints) numPointsFrac = numPoints;
+    std::cout << "Clustering sample: " << numPointsFrac  << " / All pixels: " << numPoints << "\n";
+    std::vector<size_t> allPointsInd(numPoints);
+    for (int i = 0; i < numPoints; i++)allPointsInd[i] = i;
+    std::vector<size_t> fracInd;
+    std::sample(allPointsInd.begin(), allPointsInd.end(), std::back_inserter(fracInd), numPointsFrac, std::mt19937{ std::random_device{}() });
+
+    // randomization
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> mydist(
+        0, numPoints); 
+
+    std::vector<double> centroidsVH;
+    std::vector<double> centroidsVV;
+
+    std::vector<int> clusterAssignments;
+    std::vector<int> clusterAssignmentsFrac;
+    clusterAssignments.resize(numPoints, 0);
+    clusterAssignmentsFrac.resize(numPointsFrac, 0);
+
+    // first initialize
+    for (int i = 0; i < numClasses; i++) {
+        auto randPoint = mydist(rng);
+        centroidsVH.push_back(vectorVH.at(randPoint));
+        centroidsVV.push_back(vectorVV.at(randPoint));
+    }
+
+    //Find clusters based on a fraction of the data
+    for (int iter = 0; iter < maxiter; iter++) {
+        std::cout << "Iter " << iter << "/" << maxiter << "\n";
+        updated = false;
+        for (int i = 0; i < numPointsFrac; i++) {
+            /* find nearest centre for each point */
+            int ii = fracInd[i];
+            best = std::numeric_limits<double>::max(); // positive infinity...
+            int newClusterNumber = 0;
+            for (int j = 0; j < numClasses; j++) {
+
+                double tmpVH = vectorVH.at(ii) - centroidsVH.at(j);
+                tmpVH *= tmpVH;
+                double tmpVV = vectorVV.at(ii) - centroidsVV.at(j);
+                tmpVV *= tmpVV;
+
+                double sum = tmpVH + tmpVV;
+
+                if (sum < best) {
+                    best = sum;
+                    newClusterNumber = j + 1;
+                }
+            }
+            if (clusterAssignmentsFrac[i] != newClusterNumber) {
+                updated = true;
+                clusterAssignmentsFrac[i] = newClusterNumber;
+            }
+        }
+
+        // After checking everywhere we look if there was an update
+        if (!updated)
+            break;
+
+        // recalculate centroids.
+        for (int i = 0; i < numClasses; i++) {
+            centroidsVH[i] = 0.0;
+            centroidsVV[i] = 0.0;
+        }
+
+        std::vector<int> counts;
+        counts.resize(numClasses, 0);
+
+        for (int i = 0; i < numPointsFrac; i++) {
+            auto centroidIndex = clusterAssignmentsFrac[i] - 1;
+            int ii = fracInd[i];
+            centroidsVH[centroidIndex] += vectorVH[ii];
+            centroidsVV[centroidIndex] += vectorVV[ii];
+            counts[centroidIndex]++;
+        }
+
+        for (int i = 0; i < numClasses; i++) {
+            centroidsVH[i] /= counts[i];
+            centroidsVV[i] /= counts[i];
+        }
+
+    }
+
+    // now label all pixels based on the earlier clustering
+    std::cout << "Labelling all pixels...\n";
+    for (int i = 0; i < numPoints; i++) {
+
+        best = std::numeric_limits<double>::max(); // positive infinity...
+        int newClusterNumber = 0;
+        for (int j = 0; j < numClasses; j++) {
+
+            double tmpVH = vectorVH.at(i) - centroidsVH.at(j);
+            tmpVH *= tmpVH;
+            double tmpVV = vectorVV.at(i) - centroidsVV.at(j);
+            tmpVV *= tmpVV;
+
+            double sum = tmpVH + tmpVV;
+
+            if (sum < best) {
+                best = sum;
+                newClusterNumber = j + 1;
+            }
+        }
+        clusterAssignments[i] = newClusterNumber;
+    }
+
+
+    // dump result.
+    std::cout << "Finished clustering. Dump result...\n";
+    const std::string clustersPath =
+        outDir + "/" + std::to_string(numClasses) + "-clusters.txt";
+    const std::string pointsPath =
+        outDir + "/" + std::to_string(numClasses) + "-points.txt";
+
+    std::ofstream ofsClusters;
+    ofsClusters.open(clustersPath, std::ofstream::out);
+
+    for (int i = 0; i < numClasses; i++) {
+        ofsClusters << centroidsVH[i] << " " << centroidsVV[i] << "\n";
+    }
+
+    std::ofstream ofsPoints;
+    ofsPoints.open(pointsPath, std::ofstream::out);
+
+    for (int i = 0; i < numPoints; i++) {
+        ofsPoints << clusterAssignments[i] << "\n";
+    }
 }
 
 void
@@ -532,7 +682,6 @@ int
 main(int argc, char** argv)
 {
   std::cout << "Floodsar start" << '\n';
-  createCacheDirectoryIfNotExists();
   GDALAllRegister();
 
   cxxopts::Options options("Floodsar", " - command line options");
@@ -542,6 +691,8 @@ main(int argc, char** argv)
                         cxxopts::value<std::string>()->default_value("1D"))(
     "c,cache-only",
     "Do not process whole rasters, just use cropped images from cache.")(
+    "l,conv-to-dB",
+    "Convert linear power to dB (log scale) befor clustering. Only for the 2D algorithm. Recommended.")(
     "d,directory",
     "Path to directory which to search for SAR images.",
     cxxopts::value<std::string>()->default_value(fs::current_path()))(
@@ -573,7 +724,10 @@ main(int argc, char** argv)
     cxxopts::value<std::vector<std::string>>()->default_value("none"))(
     "k,maxiter",
     "Maximum number of kmeans iteration. Only applicable to 2D algorithm.",
-    cxxopts::value<std::string>()->default_value("10"));
+    cxxopts::value<std::string>()->default_value("10"))(
+    "f,fraction",
+    "Fraction of pixels used to perform kmeans clustering. Only applicable to 2D algorithm.",
+     cxxopts::value<std::string>()->default_value("1.0"));
 
   auto userInput = options.parse(argc, argv);
 
@@ -602,6 +756,11 @@ main(int argc, char** argv)
   auto algo = userInput["algorithm"].as<std::string>();
   auto strategy = userInput["strategy"].as<std::string>();
   auto maxiter = std::stoi(userInput["maxiter"].as<std::string>());
+  auto fraction = std::stod(userInput["fraction"].as<std::string>());
+  if (fraction < 0 | fraction > 1.0) {
+      std::cout <<"Fraction of pixels is wrong: "<< fraction << " Program will quit\n";
+      return 0;
+  }
 
   // we defaults to 1D version.
   bool isSinglePolVersion = true;
@@ -611,13 +770,21 @@ main(int argc, char** argv)
   
   auto maxValue = userInput["maxValue"].as<std::vector<std::string>>();
 
+  bool convToDB = false;
+  if (userInput.count("conv-to-dB")) convToDB = true;
+
   bool cacheOnly = false;
   if (userInput.count("cache-only")) {
+    createCacheDirectoryIfNotExists();
     std::cout << "Using images from floodsar-cache" << '\n';
     cacheOnly = true;
     // Choosing this path, we ASSUME .floodsar-cache/cropped folder is healthy
     // and contains images...
   } else {
+    std::cout << "Creating new cache directory" << '\n';
+    if(fs::exists(".floodsar-cache")) fs::remove_all(".floodsar-cache");
+    createCacheDirectoryIfNotExists();
+
     auto dirname = userInput["directory"].as<std::string>();
     auto rasterExtension = userInput["extension"].as<std::string>();
 
@@ -846,14 +1013,25 @@ main(int argc, char** argv)
 	} else {
 		std::cout << "No clipping VV and VH values.\n";
 	}
-	
+    if (convToDB) {
+        std::cout << "Converting linear power to dB.\n";
+        for (int i = 0; i < vvAllPixelValues.size(); i++) if (vvAllPixelValues[i] > 0) { vvAllPixelValues[i] = 10.0 * log10(vvAllPixelValues[i]); } else { vvAllPixelValues[i] = -40; }
+        for (int i = 0; i < vhAllPixelValues.size(); i++) if (vhAllPixelValues[i] > 0) { vhAllPixelValues[i] = 10.0 * log10(vhAllPixelValues[i]); } else { vhAllPixelValues[i] = -40; }
+    }
+
+
+
     std::cout << "Input ready. Have " << elevations.size()
               << " pairs of images matched with hydro data\n";
 
     if (!userInput.count("skip-clustering")) {
       for (int i : numClassesToTry) {
-        // performClusteringViaKMeansBinary(kmeansInputFilename, i);
-        performClusteringInPlace(vhAllPixelValues, vvAllPixelValues, i, maxiter);
+          if (fraction < 1.0) {
+              performClusteringInPlaceFraction(vhAllPixelValues, vvAllPixelValues, i, maxiter, fraction);
+          }
+          else {
+              performClusteringInPlace(vhAllPixelValues, vvAllPixelValues, i, maxiter);
+          }
       }
     }
 

@@ -55,11 +55,11 @@ main(int argc, char** argv)
   } else
     std::cout << "Unable to open ./floodsar-cache/dates.txt";
 
-  if (!fs::exists("./raster")) {
-    std::cout << "./.floodsar-cache/cropped/resampled__VV_" + dates[0];
-    fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0],
-                  "./raster");
-  }
+  if (fs::exists("./raster")) fs::remove("./raster");
+  std::cout << "copy as template: ./.floodsar-cache/cropped/resampled__VV_" + dates[0] << "\n";
+  fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0], "./raster");
+  if (fs::exists("mapped")) fs::remove_all("mapped");
+  
 
   if (userInput.count("base")) {
     // base algoritm mapping.
