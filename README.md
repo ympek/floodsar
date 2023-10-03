@@ -50,7 +50,7 @@ The SAR images time series should be stored in one directory (provided using the
 where the key elements are:
 * `aaaaaaaa`, which is the `YYYYMMDD` date of the image, eg. 20150121 for the 21st of January 2015.
 * `pol`, which is a polarization of the image; either `VV` or `VH`.
-* `extension`, whish is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
+* `extension`, which is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
 
 In fact the program will look for the specified above keywords by splitting the file name at the places of the underscore character (`_`), therefore if your files do not come form the ASF RTC on demand processing just rename them to match the pattern above while keeping the appropriate  date, polarization and extension.
 
