@@ -5,7 +5,8 @@
 enum class Polarization
 {
   VH,
-  VV
+  VV,
+  e
 };
 
 std::string
@@ -29,7 +30,8 @@ stringToPol(std::string str)
   } else if (str == "VV") {
     pol = Polarization::VV;
   } else {
-    std::cout << "Sth wrong\n";
+    std::cout << "Expecting VV or VH polarization probably file name does not match the parser used; polarization parsed: "<< str << "\n";
+    pol = Polarization::e;
   }
   return pol;
 }

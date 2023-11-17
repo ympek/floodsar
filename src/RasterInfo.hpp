@@ -52,3 +52,27 @@ public:
     return RasterInfo(filepath, resultPol, resultDate);
   }
 };
+
+class StdExtractor : public RasterInfoExtractor
+{
+public:
+    RasterInfo extractFromPath(std::string filepath)
+    {
+        std::vector<std::string> result;
+        std::stringstream data(fs::path(filepath).filename());
+        std::string line;
+
+        while (std::getline(data, line, '_')) {
+            result.push_back(line);
+        }
+
+        std::string polToken = result[1].substr(0, 2);
+        Polarization resultPol = stringToPol(polToken);
+        std::string resultDate = result[0].substr(0, 8);
+
+        // std::cout << "dateToken + pol = " << resultDate << "___"  <<
+        // polToString(resultPol) << "\n";
+
+        return RasterInfo(filepath, resultPol, resultDate);
+    }
+};

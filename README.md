@@ -52,7 +52,12 @@ where the key elements are:
 * `pol`, which is a polarization of the image; either `VV` or `VH`.
 * `extension`, which is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
 
-In fact the program will look for the specified above keywords by splitting the file name at the places of the underscore character (`_`), therefore if your files do not come form the ASF RTC on demand processing just rename them to match the pattern above while keeping the appropriate  date, polarization and extension.
+In fact the program will look for the specified above keywords by splitting the file name at the places of the underscore character (`_`), therefore if your files do not come form the ASF RTC on demand processing just rename them to match the pattern above while keeping the appropriate  date, polarization and extension. 
+
+Alternatively,one can use a standard parser, i.e. the `-t` option, which expects `YYYYMMDD_pol.extension` pattern with:
+* `YYYYMMDD` is a date of the image, eg. 20150121 for the 21st of January 2015.
+* `pol`, which is a polarization of the image; either `VV` or `VH`.
+* `extension`, which is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
 
 The .csv file (provided using the `-h` parameter) with the river gauge data should have two comma-separated columns without any header (no column names). The first column should have a YYYYMMDD date of the observation and the second column should have a numerical value of the observation (water level or discharge), e.g:
 

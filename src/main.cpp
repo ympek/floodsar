@@ -283,25 +283,6 @@ performClusteringInPlaceFraction(std::vector<double>& vectorVH,
 }
 
 void
-performClusteringViaKMeansBinary(std::string inputFilename, int numClasses)
-{
-  std::string outDir = ".floodsar-cache/kmeans_outputs/" + inputFilename +
-                       "_cl_" + std::to_string(numClasses);
-
-  fs::create_directory(outDir);
-
-  std::string command = "./bin/kmeans";
-  command.append(" ");
-  command.append("./.floodsar-cache/kmeans_inputs/" + inputFilename);
-  command.append(" ");
-  command.append(std::to_string(numClasses));
-  command.append(" ");
-  command.append(outDir);
-
-  std::system(command.c_str());
-}
-
-void
 writeThresholdingResultsToFile(GDALDataset* raster,
                                double threshold,
                                std::ofstream& ofs)
@@ -691,6 +672,8 @@ main(int argc, char** argv)
                         cxxopts::value<std::string>()->default_value("1D"))(
     "c,cache-only",
     "Do not process whole rasters, just use cropped images from cache.")(
+    "t,stdParser",
+    "Use standard, i.e. YYYYMMDD_POL.extm, names parser instead of ASF HyP3 names .")(
     "l,conv-to-dB",
     "Convert linear power to dB (log scale) befor clustering. Only for the 2D algorithm. Recommended.")(
     "d,directory",
@@ -795,15 +778,30 @@ main(int argc, char** argv)
     }
     auto areaFilePath = userInput["aoi"].as<std::string>();
 
-
     RasterInfoExtractor* extractor;
-    AsfExtractor e;
-    extractor = &e;
+
+    if (userInput.count("stdParser")) {
+        StdExtractor e;
+        extractor = &e;
+        std::cout << "Using standard names parser - expecting YYYYMMDD_POL.ext\n";
+    }
+    else {
+        AsfExtractor e;
+        extractor = &e;
+        std::cout << "Using ASF HyP3 names parser.\n";
+    }
+  
+    
 
     std::vector<RasterInfo> rasterPathsBeforeMosaicking =
       readRasterDirectory(dirname, rasterExtension, extractor);
     std::vector<RasterInfo> rasterPathsAfterMosaicking;
-
+    std::for_each(rasterPathsBeforeMosaicking.begin(), rasterPathsBeforeMosaicking.end(), [](RasterInfo& r) {
+        if (polToString(r.pol) == "ERROR") {
+            std::cout << "parsing error with: " << r.absolutePath << "\n";
+            exit(1);
+            }
+        });
     std::cout << "floodsar: found " << rasterPathsBeforeMosaicking.size()
               << " rasters. Now finding dups & mosaicking \n";
 
