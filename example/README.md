@@ -1,6 +1,6 @@
 # Floodsar example
 
-Make sure that Floodsar was compiled without errors. Please download the required file from the repository: https://doi.org/10.34808/6nfs-6q42 to the `example` directory and unzip it therein:
+Make sure that Floodsar was built without errors. Please download the required file from the repository: https://doi.org/10.34808/6nfs-6q42 to the `example` directory and unzip it therein:
 
 ```
 cd example
@@ -27,37 +27,5 @@ Now run Floodsar with 1D algorithm and prepare output:
 ../build/mapper -b VH
 ```
 
-Now output files should be present in the `mapped` directory.
-You can test performance of Floodsar with different parameters in 2D algorithm or different search space in 1D algorithm.
-Note that in case of conflicts files are overwritten in the `mapped` directory.
-
-
-## Prerequisites:
-
-### Software
-
-Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
-
-Install dependencies required to build:
-
-```sudo apt install build-essential g++ cmake ninja-build libgdal-dev```
-
-Clone the repository:
-
-```git clone https://github.com/ympek/floodsar```
-
-Enter the directory:
-
-```cd floodsar```
-
-Use build script to build:
-
-```
-./build.sh
-```
-
-Then run with:
-
-```
-build/floodsar <options>
-```
+You can test the performance of Floodsar with different parameters in the 2D algorithm or different search spaces in the 1D algorithm.
+Note that in case of conflicts, files are overwritten in the `mapped` directory.
