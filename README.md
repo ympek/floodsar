@@ -1,4 +1,4 @@
-# floodsar
+# Floodsar
 
 Software package for flood extent mapping using SAR imagery time series and river gauge data.
 
@@ -164,7 +164,7 @@ Here is a comprehensive reference of available options for `floodsar`.
 Here is a comprehensive reference of available options for `mapper`.
 | Option       |      Description      | Default|
 |:-------------|:-------------|:-------------:|
-| --base<br />-b |  use output from the 1D algorithm, provide polarization VV or VH |--|
+| --base<br />-b |  use output from the 1D algorithm, provide polarization `-b VV` or `-b VH` |--|
 | --auto<br />-a |  use automatically the best output from the 2D algorithm, do not use with `-c`, or `-f`|--|
 | --classes<br />-c| use manually  output from the 2D algorithm, provide number of classes for mapping. Always use with `-f` |--|
 | --floods<br />-f|  use manually  output from the 2D algorithm, provide number of flood classes. Always use with `-c` |--|

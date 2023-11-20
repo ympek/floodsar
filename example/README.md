@@ -12,7 +12,7 @@ Now you can run Floodsar:
 
 ```../build/floodsar -a 2D -n 4,7 -f 0.1 -o aoi.tif -d images/ -p EPSG:32610 -h discharge.csv -k 100 -m 0.1,0.5 -l```
 
-If the command above worked you can test with a broader search space, bigger sample, and more iterations. Also now you can can cache with the `-c` option:
+If the command above worked you can test with a broader search space, bigger sample, and more iterations. Also now you can cache with the `-c` option:
 
 ```../build/floodsar -a 2D -n 4,20 -f 0.2 -o aoi.tif -d images/ -p EPSG:32610 -h discharge.csv -k 1000 -m 0.1,0.5 -l```
 
