@@ -54,7 +54,7 @@ where the key elements are:
 
 In fact the program will look for the specified above keywords by splitting the file name at the places of the underscore character (`_`), therefore if your files do not come form the ASF RTC on demand processing just rename them to match the pattern above while keeping the appropriate  date, polarization and extension. 
 
-Alternatively,one can use a standard parser, i.e. the `-t` option, which expects `YYYYMMDD_pol.extension` pattern with:
+Alternatively, one can use a standard parser, i.e. the `-t` option, which expects `YYYYMMDD_pol.extension` pattern with:
 * `YYYYMMDD` is a date of the image, eg. 20150121 for the 21st of January 2015.
 * `pol`, which is a polarization of the image; either `VV` or `VH`.
 * `extension`, which is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
@@ -152,13 +152,14 @@ Here is a comprehensive reference of available options for `floodsar`.
 | --epsg<br />-p | Target EPSG code for processing. Should be the same as for the AOI (-o). e.g.: EPSG:32630 for UTM 30N. |--|
 | --extension<br />-e| Files with this extension will be attempted to be loaded (.tif, .img or else. Leading dot is required). |.tif|
 | --hydro<br />-h| Path to file with hydrological data. Program expects two column csv: date YYYYMMDD, water elevation/discharge.   |--|
-| --maxiter<br />-k |Maximum number of kmeans iteration. Only applicable to 2D algorithm. |10|
+| --maxiter<br />-k |Maximum number of kmeans iteration. Only applicable to 2D algorithm. |100|
 | --maxValue<br />-m |Clip VV and VH data to this maximum value, e.g. 0.1,0.5 for VV<0.1 and VH<0.5. If not set than wont clip. Only applicable to 2D algorithm. The default option will keep the original data (no clipping)|none|
 | --skip-clustering<br />-s|    Do not perform clustering, assume output files are there. Useful when testing different strategies of picking flood classes.   |--|
 | --strategy<br />-y | Strategy how to pick flood classes. Only applicable to 2D algorithm. Possible values: vh, vv, sum. |vv|
 | --threshold<br />-n |Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for 1D thresholding, or 2,10 for 2D clustering. |--|
-| --conv-to-dB<br />-l |Convert linear power to dB (log scale) befor clustering. Only for the 2D algorithm. Recommended. |--|
+| --conv-to-dB<br />-l |Convert linear power to dB (log scale) before clustering. Only for the 2D algorithm. Recommended. |--|
 | --fraction<br />-f |Fraction of pixels used to perform kmeans clustering. E.g. -f 0.1 for using 10% of data to identify clusters in k-means. Good for large rasters. Only applicable to 2D algorithm. |--|
+| --stdParser<br />-t |If this option is used the standrd parser (`YYYYMMDD_pol.extension`) is used insted of the ASF parser|--|
 
 Here is a comprehensive reference of available options for `mapper`.
 | Option       |      Description      | Default|

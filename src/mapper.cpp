@@ -58,7 +58,9 @@ main(int argc, char** argv)
   if (fs::exists("./raster")) fs::remove("./raster");
   std::cout << "copy as template: ./.floodsar-cache/cropped/resampled__VV_" + dates[0] << "\n";
   fs::copy_file("./.floodsar-cache/cropped/resampled__VV_" + dates[0], "./raster");
-  if (fs::exists("mapped")) fs::remove_all("mapped");
+  
+  //one may want to clean-up all, however, it is better ro remove only directories with conflict as now implemented
+  //if (fs::exists("mapped")) fs::remove_all("mapped");
   
 
   if (userInput.count("base")) {
@@ -112,8 +114,11 @@ main(int argc, char** argv)
   int dateIndex = 0;
   int bufferIndex = 0;
 
-  fs::create_directory("./mapped/");
+  //remove only conflicts
+  if (!fs::exists("mapped")) fs::create_directory("mapped");
+  if (fs::exists(mapDirectory)) fs::remove_all(mapDirectory);
   fs::create_directory(mapDirectory);
+  
 
   std::string mapPath = mapDirectory + dates[dateIndex] + ".tif";
   std::filesystem::copy_file(rasterToClassify, mapPath);

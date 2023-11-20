@@ -707,7 +707,7 @@ main(int argc, char** argv)
     cxxopts::value<std::vector<std::string>>()->default_value("none"))(
     "k,maxiter",
     "Maximum number of kmeans iteration. Only applicable to 2D algorithm.",
-    cxxopts::value<std::string>()->default_value("10"))(
+    cxxopts::value<std::string>()->default_value("100"))(
     "f,fraction",
     "Fraction of pixels used to perform kmeans clustering. Only applicable to 2D algorithm.",
      cxxopts::value<std::string>()->default_value("1.0"));
