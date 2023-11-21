@@ -1,46 +1,42 @@
-# Floodsar
+# Floodsar manual
 
 Software package for flood extent mapping using SAR imagery time series and river gauge data.
 
-## Prerequisites:
+## Command line options
 
-### Software
+Here is a comprehensive reference of available options for `floodsar`.
 
-Assuming recent Debian-based Linux distribution (Ubuntu, Mint, etc.)
+| Option       |      Description      | Default|
+|:-------------|:-------------|:-------------:|
+| --algorithm<br />-a |  Choose algorithm. Possible values: 1D, 2D. |1D|
+| --aoi<br />-o| Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.|--|
+| --cache-only<br />-c|    Do not process whole rasters, just use cropped images from cache.   |--|
+| --directory<br />-d| Path to directory which to search for SAR images. |--|
+| --epsg<br />-p | Target EPSG code for processing. Should be the same as for the AOI (-o). e.g.: EPSG:32630 for UTM 30N. |--|
+| --extension<br />-e| Files with this extension will be attempted to be loaded (.tif, .img or else. Leading dot is required). |.tif|
+| --hydro<br />-h| Path to file with hydrological data. Program expects two column csv: date YYYYMMDD, water elevation/discharge.   |--|
+| --maxiter<br />-k |Maximum number of kmeans iteration. Only applicable to 2D algorithm. |100|
+| --maxValue<br />-m |Clip VV and VH data to this maximum value, e.g. 0.1,0.5 for VV<0.1 and VH<0.5. If not set than wont clip. Only applicable to 2D algorithm. The default option will keep the original data (no clipping)|none|
+| --skip-clustering<br />-s|    Do not perform clustering, assume output files are there. Useful when testing different strategies of picking flood classes.   |--|
+| --strategy<br />-y | Strategy how to pick flood classes. Only applicable to 2D algorithm. Possible values: vh, vv, sum. |vv|
+| --threshold<br />-n |Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for 1D thresholding, or 2,10 for 2D clustering. |--|
+| --conv-to-dB<br />-l |Convert linear power to dB (log scale) before clustering. Only for the 2D algorithm. Recommended. |--|
+| --fraction<br />-f |Fraction of pixels used to perform kmeans clustering. E.g. -f 0.1 for using 10% of data to identify clusters in k-means. Good for large rasters. Only applicable to 2D algorithm. |--|
+| --stdParser<br />-t |If this option is used the standrd parser (`YYYYMMDD_pol.extension`) is used insted of the ASF parser|--|
 
-Install dependencies required to build:
+Here is a comprehensive reference of available options for `mapper`.
+| Option       |      Description      | Default|
+|:-------------|:-------------|:-------------:|
+| --base<br />-b |  use output from the 1D algorithm, provide polarization `-b VV` or `-b VH` |--|
+| --auto<br />-a |  use automatically the best output from the 2D algorithm, do not use with `-c`, or `-f`|--|
+| --classes<br />-c| use manually  output from the 2D algorithm, provide number of classes for mapping. Always use with `-f` |--|
+| --floods<br />-f|  use manually  output from the 2D algorithm, provide number of flood classes. Always use with `-c` |--|
 
-```sudo apt install build-essential g++ cmake ninja-build libgdal-dev```
 
-Clone the repository:
-
-```git clone https://github.com/ympek/floodsar```
-
-Enter the directory:
-
-```cd floodsar```
-
-Use build script to build:
-
-```
-./build.sh
-```
-
-Then run with:
-
-```
-build/floodsar <options>
-```
-For the complete reference of <options>, data, and use cases, pleas visit the [docs](docs/README.md) directory. More examples and links to sample data are available in the [example](example/README.md) directory.
-
-### Data 
+## Data 
 * SAR time series, e.g. Sentinel-1. The more the better, probably (e.g. 20 dual-pol images or more)
 * Water levels or discharge data from a river gauge in the area (CSV file with dates and values is expected)
 * Geotiff describing AOI (Area of interest). The program will crop all images to this area. Only the bounding box of the geotiff is needed, pixel values don't matter. If you have already cropped images, this step can be skipped.
-
-## Usage / use cases
-
-### Basic
 
 If you have uncropped/unprepared SAR time series, the program will have to crop the images to area of interest first (`-o` parameter). If more than one image has the same date, the program will perform mosaicking of the files. There is also option of reprojecting the images implemented as a command line parameter (`-e`).
 
@@ -75,6 +71,10 @@ The .csv file (provided using the `-h` parameter) with the river gauge data shou
 ```
 
 There can be more observations in the csv file than SAR images. The program will match images with the csv file content by date.
+
+## Usage / use cases
+
+### Basic
 
 The program has two algorithms for flood mapping (`-a` parameter) 1D and 2D:
 
@@ -139,36 +139,6 @@ From now on, we can run the program with `--cache-only` or `-c` option instead o
 or for 2D algorithm:
 
 `./floodsar --cache-only --hydro data/levels.csv --algorithm 2D [other parameters]`
-
-## Command line options
-
-Here is a comprehensive reference of available options for `floodsar`.
-
-| Option       |      Description      | Default|
-|:-------------|:-------------|:-------------:|
-| --algorithm<br />-a |  Choose algorithm. Possible values: 1D, 2D. |1D|
-| --aoi<br />-o| Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.|--|
-| --cache-only<br />-c|    Do not process whole rasters, just use cropped images from cache.   |--|
-| --directory<br />-d| Path to directory which to search for SAR images. |--|
-| --epsg<br />-p | Target EPSG code for processing. Should be the same as for the AOI (-o). e.g.: EPSG:32630 for UTM 30N. |--|
-| --extension<br />-e| Files with this extension will be attempted to be loaded (.tif, .img or else. Leading dot is required). |.tif|
-| --hydro<br />-h| Path to file with hydrological data. Program expects two column csv: date YYYYMMDD, water elevation/discharge.   |--|
-| --maxiter<br />-k |Maximum number of kmeans iteration. Only applicable to 2D algorithm. |100|
-| --maxValue<br />-m |Clip VV and VH data to this maximum value, e.g. 0.1,0.5 for VV<0.1 and VH<0.5. If not set than wont clip. Only applicable to 2D algorithm. The default option will keep the original data (no clipping)|none|
-| --skip-clustering<br />-s|    Do not perform clustering, assume output files are there. Useful when testing different strategies of picking flood classes.   |--|
-| --strategy<br />-y | Strategy how to pick flood classes. Only applicable to 2D algorithm. Possible values: vh, vv, sum. |vv|
-| --threshold<br />-n |Comma separated sequence of search space, start,end[,step], e.g.: 0.001,0.1,0.01 for 1D thresholding, or 2,10 for 2D clustering. |--|
-| --conv-to-dB<br />-l |Convert linear power to dB (log scale) before clustering. Only for the 2D algorithm. Recommended. |--|
-| --fraction<br />-f |Fraction of pixels used to perform kmeans clustering. E.g. -f 0.1 for using 10% of data to identify clusters in k-means. Good for large rasters. Only applicable to 2D algorithm. |--|
-| --stdParser<br />-t |If this option is used the standrd parser (`YYYYMMDD_pol.extension`) is used insted of the ASF parser|--|
-
-Here is a comprehensive reference of available options for `mapper`.
-| Option       |      Description      | Default|
-|:-------------|:-------------|:-------------:|
-| --base<br />-b |  use output from the 1D algorithm, provide polarization `-b VV` or `-b VH` |--|
-| --auto<br />-a |  use automatically the best output from the 2D algorithm, do not use with `-c`, or `-f`|--|
-| --classes<br />-c| use manually  output from the 2D algorithm, provide number of classes for mapping. Always use with `-f` |--|
-| --floods<br />-f|  use manually  output from the 2D algorithm, provide number of flood classes. Always use with `-c` |--|
 
 
 # Tips, FAQ
