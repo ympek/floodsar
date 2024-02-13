@@ -31,4 +31,4 @@ Then run with:
 ```
 build/floodsar <options>
 ```
-For the complete reference of `<options>`, data, and use cases, pleas visit the [docs](docs/README.md) directory. More examples and links to sample data are available in the [example](example/README.md) directory.
+For the complete reference of `<options>`, data, and use cases, pleas visit the [docs](docs/README.md) directory. Example and link to sample data are available in the [example](example/README.md) directory.

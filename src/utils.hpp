@@ -6,6 +6,40 @@
 #include <iostream>
 #include <vector>
 
+struct ClassifiedCentroid
+{
+  double vh;
+  double vv;
+  unsigned int cl;
+};
+
+struct compareByVH
+{
+  inline bool operator()(const ClassifiedCentroid& c1,
+                         const ClassifiedCentroid& c2)
+  {
+    return (c1.vh < c2.vh);
+  }
+};
+
+struct compareByVV
+{
+  inline bool operator()(const ClassifiedCentroid& c1,
+                         const ClassifiedCentroid& c2)
+  {
+    return (c1.vv < c2.vv);
+  }
+};
+
+struct compareBySum
+{
+  inline bool operator()(const ClassifiedCentroid& c1,
+                         const ClassifiedCentroid& c2)
+  {
+    return (c1.vv + c1.vh < c2.vv + c2.vh);
+  }
+};
+
 std::string
 getCurrentTimeString()
 {
@@ -129,4 +163,17 @@ printMap(const std::map<std::string, double>& m)
     std::cout << '[' << key << "] = " << value << "\n";
   }
   std::cout << '\n';
+}
+
+void
+createCacheDirectoryIfNotExists()
+{
+  fs::create_directory(".floodsar-cache");
+  fs::create_directory(".floodsar-cache/cropped");
+  fs::create_directory(".floodsar-cache/vrt");
+  fs::create_directory(".floodsar-cache/reprojected");
+  fs::create_directory(".floodsar-cache/proj4");
+  fs::create_directory(".floodsar-cache/kmeans_inputs");
+  fs::create_directory(".floodsar-cache/kmeans_outputs");
+  fs::create_directory(".floodsar-cache/1d_output");
 }

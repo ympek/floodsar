@@ -8,13 +8,14 @@ Here is a comprehensive reference of available options for `floodsar`.
 
 | Option       |      Description      | Default|
 |:-------------|:-------------|:-------------:|
+| --help<br />-h |  Print help |--|
 | --algorithm<br />-a |  Choose algorithm. Possible values: 1D, 2D. |1D|
 | --aoi<br />-o| Area of Interest file path. The program expects geocoded tiff (GTiff). Content doesn't matter, the program just extracts the bounding box.|--|
 | --cache-only<br />-c|    Do not process whole rasters, just use cropped images from cache.   |--|
 | --directory<br />-d| Path to directory which to search for SAR images. |--|
 | --epsg<br />-p | Target EPSG code for processing. Should be the same as for the AOI (-o). e.g.: EPSG:32630 for UTM 30N. |--|
 | --extension<br />-e| Files with this extension will be attempted to be loaded (.tif, .img or else. Leading dot is required). |.tif|
-| --hydro<br />-h| Path to file with hydrological data. Program expects two column csv: date YYYYMMDD, water elevation/discharge.   |--|
+| --gauge<br />-g| Path to file with river gauge hydrological data. Program expects two column csv: date YYYYMMDD, water elevation/discharge.   |--|
 | --maxiter<br />-k |Maximum number of kmeans iteration. Only applicable to 2D algorithm. |100|
 | --maxValue<br />-m |Clip VV and VH data to this maximum value, e.g. 0.1,0.5 for VV<0.1 and VH<0.5. If not set than wont clip. Only applicable to 2D algorithm. The default option will keep the original data (no clipping)|none|
 | --skip-clustering<br />-s|    Do not perform clustering, assume output files are there. Useful when testing different strategies of picking flood classes.   |--|
@@ -56,7 +57,7 @@ Alternatively, one can use a standard parser, i.e. the `-t` option, which expect
 * `pol`, which is a polarization of the image; either `VV` or `VH`.
 * `extension`, which is the image file extension, e.g, `.tif`, specified using the `-e` parameter (default is `.tif`).
 
-The .csv file (provided using the `-h` parameter) with the river gauge data should have two comma-separated columns without any header (no column names). The first column should have a YYYYMMDD date of the observation and the second column should have a numerical value of the observation (water level or discharge), e.g:
+The .csv file (provided using the `-g` parameter) with the river gauge data should have two comma-separated columns without any header (no column names). The first column should have a YYYYMMDD date of the observation and the second column should have a numerical value of the observation (water level or discharge), e.g:
 
 ```
 20150121,1.2
@@ -95,7 +96,7 @@ To run the program with the 1D algorithm, search space 0.001 to 0.1 with a step 
 
 `cd build` to go to the directory with the floodsar executable
 
-`./floodsar -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 0.001,0.1,0.001 -p EPSG:32630`
+`./floodsar -d data/sarInput -a data/aoi.tif -g data/levels.csv -n 0.001,0.1,0.001 -p EPSG:32630`
 
 to create output flood maps use 
 
@@ -109,11 +110,11 @@ if the VH polarization thresholding is preferred.
 
 To re-run the algorithm with a broader search space and the cached data from the previous step (no preprocessing), use:
 
-`./floodsar -c -h data/levels.csv -n 0.001,0.3,0.001`
+`./floodsar -c -g data/levels.csv -n 0.001,0.3,0.001`
 
 To run the program with the 2D algorithm, the number of k-means clusters from 3 to 6 and 11 iterations, maximum value of VV=0.2 and maximum value of VH=0.4, a relative path to an AOI file: data/aoi.tif, a relative path to a .csv file: data/levels.csv, a relative path to SAR imagery directory with .tif images: data/sarInput, and the UTM 30N (EPSG:32630) coordinate system use:
 
-`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -h data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630`
+`./floodsar -a 2D -d data/sarInput -a data/aoi.tif -g data/levels.csv -n 3,6 -k 11 -m 0.2,0.4 -p EPSG:32630`
 
 to create output flood maps, use `mapper` binary.  You can use the best combination of classes as determined by the floodsar output with the `-a` option:
 
@@ -134,11 +135,11 @@ Images should be put into the sub-folder `build/.floodsar-cache/cropped/` of the
 
 From now on, we can run the program with `--cache-only` or `-c` option instead of providing the SAR images directory `-d`, AOI file `-o` and coordinate system `-p`:
 
-`./floodsar --cache-only --hydro data/levels.csv [other parameters]`
+`./floodsar --cache-only -g data/levels.csv [other parameters]`
 
 or for 2D algorithm:
 
-`./floodsar --cache-only --hydro data/levels.csv --algorithm 2D [other parameters]`
+`./floodsar --cache-only -g data/levels.csv --algorithm 2D [other parameters]`
 
 
 # Tips, FAQ
