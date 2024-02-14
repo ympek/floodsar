@@ -45,7 +45,7 @@ main(int argc, char** argv)
     "Path to directory which to search for SAR images.",
     cxxopts::value<std::string>()->default_value(fs::current_path()))(
     "g,gauge",
-    "Path to file with hydrological data. Program expects csv.",
+    "Path to file with river gauge (hydrological) data. Program expects csv.",
     cxxopts::value<std::string>())(
     "e,extension",
     "Files with this extension will be attempted to be loaded.",
@@ -87,12 +87,12 @@ main(int argc, char** argv)
     }
     
   // required parameters
-  if (!userInput.count("hydro")) {
+  if (!userInput.count("gauge")) {
     std::cout << "Path to water level data not provided, use -g option. "
                  "Program will quit\n";
     return 0;
   }
-  auto hydroDataCsvFile = userInput["hydro"].as<std::string>();
+  auto hydroDataCsvFile = userInput["gauge"].as<std::string>();
 
   if (!userInput.count("threshold")) {
     std::cout
@@ -395,17 +395,12 @@ main(int argc, char** argv)
 
 
     std::cout << "Input ready. Have " << elevations.size()
-              << " pairs of images matched with hydro data\n";
+              << " pairs of images matched with gauge data\n";
 
     if (!userInput.count("skip-clustering")) {
       for (int i : numClassesToTry) {
-          if (fraction < 1.0) {
-              performClusteringInPlaceFraction(vhAllPixelValues, vvAllPixelValues, i, maxiter, fraction);
-          }
-          else {
-              performClusteringInPlace(vhAllPixelValues, vvAllPixelValues, i, maxiter);
-          }
-      }
+		  performClustering(vhAllPixelValues, vvAllPixelValues, i, maxiter, fraction);
+		  }
     }
 
     int indexForLogs = 0;

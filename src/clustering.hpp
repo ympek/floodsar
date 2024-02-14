@@ -1,121 +1,13 @@
 #pragma once
 
 #include <random>
+#include <fstream>
 
 const std::string kmeansInputFilename = "KMEANS_INPUT";
+const int kmeansMinimumPoints = 100;
 
 void
-performClusteringInPlace(std::vector<double>& vectorVH,
-                         std::vector<double>& vectorVV,
-                         int numClasses, int maxiter)
-{
-
-  std::string outDir = ".floodsar-cache/kmeans_outputs/" + kmeansInputFilename +
-                       "_cl_" + std::to_string(numClasses);
-  fs::create_directory(outDir);
-
-  //  initialization
-  int numPoints = vectorVH.size();
-  bool updated = false;
-  double best;
-
-  // randomization
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_int_distribution<std::mt19937::result_type> mydist(
-    0, numPoints); // distribution in range [1, 6]
-
-  std::vector<double> centroidsVH;
-  std::vector<double> centroidsVV;
-
-  std::vector<int> clusterAssignments;
-  clusterAssignments.resize(numPoints, 0);
-
-  // first initialize
-  for (int i = 0; i < numClasses; i++) {
-    auto randPoint = mydist(rng);
-    centroidsVH.push_back(vectorVH.at(randPoint));
-    centroidsVV.push_back(vectorVV.at(randPoint));
-  }
-
-  for (int iter = 0; iter < maxiter; iter++) {
-    std::cout << "Iter " << iter << "/" << maxiter << "\n";
-    updated = false;
-    for (int i = 0; i < numPoints; i++) {
-      /* find nearest centre for each point */
-      best = std::numeric_limits<double>::max(); // positive infinity...
-      int newClusterNumber = 0;
-      for (int j = 0; j < numClasses; j++) {
-        double tmpVH = vectorVH.at(i) - centroidsVH.at(j);
-        tmpVH *= tmpVH;
-
-        double tmpVV = vectorVV.at(i) - centroidsVV.at(j);
-        tmpVV *= tmpVV;
-
-        double sum = tmpVH + tmpVV;
-
-        if (sum < best) {
-          best = sum;
-          newClusterNumber = j + 1;
-        }
-      }
-      if (clusterAssignments[i] != newClusterNumber) {
-        updated = true;
-        clusterAssignments[i] = newClusterNumber;
-      }
-    }
-
-    // After checking everywhere we look if there was an update
-    if (!updated)
-      break;
-
-    // recalculate centroids.
-    for (int i = 0; i < numClasses; i++) {
-      centroidsVH[i] = 0.0;
-      centroidsVV[i] = 0.0;
-    }
-
-    std::vector<int> counts;
-    counts.resize(numClasses, 0);
-
-    for (int i = 0; i < numPoints; i++) {
-      auto centroidIndex = clusterAssignments[i] - 1;
-      centroidsVH[centroidIndex] += vectorVH[i];
-      centroidsVV[centroidIndex] += vectorVV[i];
-      counts[centroidIndex]++;
-    }
-
-    for (int i = 0; i < numClasses; i++) {
-      centroidsVH[i] /= counts[i];
-      centroidsVV[i] /= counts[i];
-    }
-  }
-
-  // dump result.
-  std::cout << "Finished clustering. Dump result...\n";
-  const std::string clustersPath =
-    outDir + "/" + std::to_string(numClasses) + "-clusters.txt";
-  const std::string pointsPath =
-    outDir + "/" + std::to_string(numClasses) + "-points.txt";
-
-  std::ofstream ofsClusters;
-  ofsClusters.open(clustersPath, std::ofstream::out);
-
-  for (int i = 0; i < numClasses; i++) {
-    ofsClusters << centroidsVH[i] << " " << centroidsVV[i] << "\n";
-  }
-
-  std::ofstream ofsPoints;
-  ofsPoints.open(pointsPath, std::ofstream::out);
-
-  for (int i = 0; i < numPoints; i++) {
-    ofsPoints << clusterAssignments[i] << "\n";
-  }
-}
-
-
-void
-performClusteringInPlaceFraction(std::vector<double>& vectorVH,
+performClustering(std::vector<double>& vectorVH,
     std::vector<double>& vectorVV,
     int numClasses, int maxiter, double frac)
 {
@@ -124,20 +16,25 @@ performClusteringInPlaceFraction(std::vector<double>& vectorVH,
         "_cl_" + std::to_string(numClasses);
     fs::create_directory(outDir);
 
-    //  initialization
+	
+	//  initialization
     int numPoints = vectorVH.size();
     int numPointsFrac = round(numPoints * frac);
     bool updated = false;
     double best;
 
 
-    if (numPointsFrac < 1) numPointsFrac = 10;
+    if (numPointsFrac < 1) numPointsFrac = kmeansMinimumPoints;
     if (numPointsFrac > numPoints) numPointsFrac = numPoints;
     std::cout << "Clustering sample: " << numPointsFrac  << " / All pixels: " << numPoints << "\n";
     std::vector<size_t> allPointsInd(numPoints);
-    for (int i = 0; i < numPoints; i++)allPointsInd[i] = i;
+    for (int i = 0; i < numPoints; i++) allPointsInd[i] = i;
     std::vector<size_t> fracInd;
-    std::sample(allPointsInd.begin(), allPointsInd.end(), std::back_inserter(fracInd), numPointsFrac, std::mt19937{ std::random_device{}() });
+	if(frac < 1)
+		std::sample(allPointsInd.begin(), allPointsInd.end(), std::back_inserter(fracInd), numPointsFrac, std::mt19937{ std::random_device{}() });
+	else
+		fracInd = allPointsInd;
+		
 
     // randomization
     std::random_device dev;
