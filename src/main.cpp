@@ -88,22 +88,21 @@ main(int argc, char** argv)
     
   // required parameters
   if (!userInput.count("gauge")) {
-    std::cout << "Path to water level data not provided, use -g option. "
-                 "Program will quit\n";
+    std::cout << "Path to water level data not provided, use -g option. \n"<< options.help() << "\nProgram will quit\n";
     return 0;
   }
   auto hydroDataCsvFile = userInput["gauge"].as<std::string>();
 
   if (!userInput.count("threshold")) {
     std::cout
-      << "Search space not provided, use -n option. Program will quit\n";
+      << "Search space not provided, use -n option.\n"<< options.help() << "\nProgram will quit\n";
     return 0;
   }
   auto thresholdSequence =
     userInput["threshold"].as<std::vector<std::string>>();
 
   if (!userInput.count("epsg")) {
-    std::cout << "EPSG not provided, use -p option. Program will quit\n";
+    std::cout << "EPSG not provided, use -p option.\n"<< options.help() << "\nProgram will quit\n";
     return 0;
   }
   
@@ -113,7 +112,7 @@ main(int argc, char** argv)
   auto maxiter = std::stoi(userInput["maxiter"].as<std::string>());
   auto fraction = std::stod(userInput["fraction"].as<std::string>());
   if (fraction < 0 | fraction > 1.0) {
-      std::cout <<"Fraction of pixels is wrong: "<< fraction << " Program will quit\n";
+      std::cout <<"Fraction of pixels is not in (0.0, 1.0>: "<< fraction << " Program will quit\n";
       return 0;
   }
 
