@@ -107,10 +107,7 @@ main(int argc, char** argv)
     return 0;
   }
   
-
-
   auto epsgCode = userInput["epsg"].as<std::string>();
-
   auto algo = userInput["algorithm"].as<std::string>();
   auto strategy = userInput["strategy"].as<std::string>();
   auto maxiter = std::stoi(userInput["maxiter"].as<std::string>());
