@@ -115,6 +115,9 @@ main(int argc, char** argv)
       std::cout <<"Fraction of pixels is not in (0.0, 1.0>: "<< fraction << " Program will quit\n";
       return 0;
   }
+  
+  //in case of pixel value = 0 durinf lin to dB conversion
+  const double minValueDbl = -40.0;
 
   // we defaults to 1D version.
   bool isSinglePolVersion = true;
@@ -306,9 +309,14 @@ main(int argc, char** argv)
 
     std::vector<int> numClassesToTry;
     for (int j = thresholdSequenceInt[0]; j <= thresholdSequenceInt[1]; j++) {
-      numClassesToTry.push_back(j);
-    }
-
+		if(j==1) continue;
+		numClassesToTry.push_back(j);
+		}
+	if(numClassesToTry.size() == 0)
+	{
+		std::cout << "to few classes for k-means, increase the -n parameter range\nProgram will quit\n";
+		return 0;
+	}
     std::ofstream ofs;
     ofs.open("./.floodsar-cache/kmeans_inputs/" + kmeansInputFilename,
              std::ofstream::out);
@@ -384,8 +392,8 @@ main(int argc, char** argv)
 	}
     if (convToDB) {
         std::cout << "Converting linear power to dB.\n";
-        for (int i = 0; i < vvAllPixelValues.size(); i++) if (vvAllPixelValues[i] > 0) { vvAllPixelValues[i] = 10.0 * log10(vvAllPixelValues[i]); } else { vvAllPixelValues[i] = -40; }
-        for (int i = 0; i < vhAllPixelValues.size(); i++) if (vhAllPixelValues[i] > 0) { vhAllPixelValues[i] = 10.0 * log10(vhAllPixelValues[i]); } else { vhAllPixelValues[i] = -40; }
+        for (int i = 0; i < vvAllPixelValues.size(); i++) if (vvAllPixelValues[i] > 0) { vvAllPixelValues[i] = 10.0 * log10(vvAllPixelValues[i]); } else { vvAllPixelValues[i] = minValueDbl; }
+        for (int i = 0; i < vhAllPixelValues.size(); i++) if (vhAllPixelValues[i] > 0) { vhAllPixelValues[i] = 10.0 * log10(vhAllPixelValues[i]); } else { vhAllPixelValues[i] = minValueDbl; }
     }
 
 
@@ -405,9 +413,9 @@ main(int argc, char** argv)
     unsigned int bestMaxClasses;
     unsigned int bestFloodClasses;
 
-    for (auto cl : numClassesToTry) {
+    for (int cl : numClassesToTry) {
 
-      unsigned int floodClassesNum = cl / 2;
+      unsigned int floodClassesNum = cl-1;
       while (floodClassesNum) {
         std::vector<unsigned int> floodedAreaValues;
         calculateFloodedAreasFromKMeansOutput(
