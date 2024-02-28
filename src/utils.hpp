@@ -12,7 +12,7 @@ struct ClassifiedCentroid
   double vv;
   unsigned int cl;
 };
-
+//simple utilites to compare value of centroids by polariztion (vh,vv or sum).
 struct compareByVH
 {
   inline bool operator()(const ClassifiedCentroid& c1,
@@ -105,6 +105,7 @@ calcCorrelationCoeff(std::vector<unsigned int>& floodedAreaVals,
   return corr;
 }
 
+//Converts hydrological date format to standard date format yyyymmdd
 Date
 hydrologicalToNormalDate(std::string_view year,
                          std::string_view month,
@@ -156,6 +157,7 @@ hydrologicalToNormalDate(std::string_view year,
   return out;
 }
 
+//utility function that prints obsElevationMaps to console
 void
 printMap(const std::map<std::string, double>& m)
 {
@@ -165,6 +167,7 @@ printMap(const std::map<std::string, double>& m)
   std::cout << '\n';
 }
 
+//creates neccasary local files 
 void
 createCacheDirectoryIfNotExists()
 {

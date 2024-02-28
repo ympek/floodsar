@@ -7,6 +7,13 @@
 #include <thread>
 #include <fstream>
 
+
+/*
+* Gets the bounding box of Sentintel Imagery raster
+* @param raster is retreived from GDAL
+*
+*/
+ 
 BoundingBox
 getRasterBoundingBox(GDALDataset* raster)
 {
@@ -41,6 +48,13 @@ getRasterBoundingBox(GDALDataset* raster)
   return boundingBox;
 }
 
+/*
+* The functions crops satellite imagery in smaller region of interes
+* @param zoneBbox defines area of interest
+* @param info is a georeference info GDAL
+* @param epsgCode is projection code applied in satelltie imagery*
+*/
+ 
 void
 cropToZone(BoundingBox zoneBBox, RasterInfo info, std::string epsgCode)
 {
@@ -68,6 +82,13 @@ cropToZone(BoundingBox zoneBBox, RasterInfo info, std::string epsgCode)
   std::system(command.c_str());
 }
 
+/* The function reduces geographcially raster to the area of interest in order to save memory.
+*
+* @param rasterPaths is a vector of raster information  (RasterInfo) of analyzed satellite imageries
+* @param aoiDataset is a pointer to imagery data
+* @param epsgCode is a cartographic projection code used in imagery (assumed equal to every imagery)
+*
+*/
 void
 cropRastersToAreaOfInterest(std::vector<RasterInfo>& rasterPaths,
                             GDALDataset* aoiDataset,
@@ -97,6 +118,7 @@ cropRastersToAreaOfInterest(std::vector<RasterInfo>& rasterPaths,
   }
 }
 
+//get imagery projection info
 void
 getProjectionInfo(std::string rasterPath, std::string proj4filePath)
 {
@@ -120,8 +142,7 @@ printProjCrs(RasterInfo info)
   std::system(command.c_str());
 }
 
-// returns absolute paths to all images that will take part in calculating the
-// result
+// returns absolute paths to all images that will take part in calculating the result...
 std::vector<RasterInfo>
 readRasterDirectory(std::string dirname,
                     std::string fileExtension,
@@ -183,6 +204,7 @@ mosaicRasters(const std::string targetPath,
   std::system(command.c_str());
 }
 
+//if two rasters with the same are present then mosaicing is performed...
 void
 performMosaicking(std::vector<RasterInfo>& rasterInfos,
                   std::vector<RasterInfo>& outputVector)
@@ -226,6 +248,7 @@ performMosaicking(std::vector<RasterInfo>& rasterInfos,
   }
 }
 
+//prefrom reprojection using GDAL (gdalwarp) 
 std::string
 performReprojection(RasterInfo& info, std::string epsgCode)
 {
@@ -248,7 +271,7 @@ performReprojection(RasterInfo& info, std::string epsgCode)
 
   return filename;
 }
-
+//in case of different projection of a raster file..
 void
 reprojectIfNeeded(std::vector<RasterInfo>& rasters, std::string epsgCode)
 {
@@ -301,6 +324,7 @@ getPixelValuesFromRaster(GDALDataset* raster,
   CPLFree(buffer);
 }
 
+// Method to calculae flooder area basing on threshold in 1D algorithm
 unsigned int
 calcFloodedArea(GDALDataset* raster, double threshold)
 {

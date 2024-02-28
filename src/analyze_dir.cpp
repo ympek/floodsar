@@ -17,6 +17,11 @@
 #include <sys/wait.h>
 #include <thread>
 
+/*
+* Utility function that contains main() . This script can is used additionaly to analyze and prepare input data for the floodsar 
+* algorithm.
+*/
+
 namespace fs = std::filesystem;
 
 void
@@ -75,6 +80,7 @@ main(int argc, char** argv)
 
     std::ifstream proj4file(proj4Path);
 
+	//get polarization and date info from imagery filenames
     RasterInfo extractedInfo = extractor->extractFromPath(filepath.string());
 
     std::getline(proj4file, extractedInfo.proj4);
