@@ -1,5 +1,9 @@
 #pragma once
 
+/*
+* Class representing analyzed bound box
+*/
+
 class BoundingBox
 {
 public:

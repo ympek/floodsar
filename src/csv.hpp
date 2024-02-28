@@ -3,6 +3,10 @@
 #include <string>
 #include <vector>
 
+/*
+* Class for reading a CSV file with discharge data. See exammple -> discharge.csv file 
+*/
+
 class CSVRow
 {
 public:

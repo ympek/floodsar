@@ -19,6 +19,11 @@
 
 namespace fs = std::filesystem;
 
+/*
+*
+* This is a postprocessing script for transforming floodSar results to rasters. 
+*
+*/
 int
 main(int argc, char** argv)
 {
@@ -34,6 +39,7 @@ main(int argc, char** argv)
     "a,auto",
     "automatically use best k-means results");
 
+//default values for 1D algorithm
   int numAllClassess = 2;
   int numFloodClasses = 1;
   int aa;
@@ -67,12 +73,12 @@ main(int argc, char** argv)
     // base algoritm mapping.
     floodClasses.push_back(1);
     std::string pol = userInput["base"].as<std::string>();
-    // bedzie VV albo VH
+    // either VV or VH
 
     pointsFile = "./.floodsar-cache/1d_output/" + pol;
     mapDirectory = "./mapped/base_algo_pol_" + pol + "/";
   } else {
-    // improved algo mapping.
+    // 2D algroithm
     if (userInput.count("auto")) 
        {
         std::ifstream bestClassStream(".floodsar-cache/kmeans_outputs/best.txt");
@@ -167,6 +173,7 @@ main(int argc, char** argv)
         std::cout << "Its time to stop. \n";
         break;
       }
+	  //mapPath contains reults raster for particular date
       mapPath = mapDirectory + dates[dateIndex] + ".tif";
       std::filesystem::copy_file(rasterToClassify, mapPath);
 

@@ -1,5 +1,11 @@
 #pragma once
 
+/* 
+* 
+* Utility script for representing coordinates in the algorothm
+*
+*/
+
 class XYPair
 {
 public:

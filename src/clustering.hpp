@@ -3,9 +3,23 @@
 #include <random>
 #include <fstream>
 
+/*
+* The 2D algorithm that performs clustering on two SAR polarizations at the same time.
+
+@param vectorVH is a cross polarization
+@param vectorVV is a co-polarization
+@param numClasses is a number of flooded classes
+@param maxiter is a maximum number of iteration to find clusters
+@param frac is a fraction of pixels that algorithms analyzes in order to find cluster centroids.
+
+*/
 const std::string kmeansInputFilename = "KMEANS_INPUT";
 const int kmeansMinimumPoints = 100;
-
+/*
+*
+* Function performs k-means clustering for floodSar
+*
+*/
 void
 performClustering(std::vector<double>& vectorVH,
     std::vector<double>& vectorVV,
@@ -159,7 +173,14 @@ performClustering(std::vector<double>& vectorVH,
         ofsPoints << clusterAssignments[i] << "\n";
     }
 }
-
+/*
+Function that returns a vector with classes list
+*
+* @params clusersFilePath is a prefix for filenemame that stores flood mapping results
+* @params classesNum is a number of flood classes
+* @params is a strategy how to pick flood classes. Only applicable to 2D algorithm. Possible values: vh, vv, sum.
+* 
+*/
 std::vector<unsigned int>
 createFloodClassesList(std::string clustersFilePath,
                        unsigned int classesNum,
@@ -202,6 +223,12 @@ createFloodClassesList(std::string clustersFilePath,
 
 
 void
+/*
+Function to calculate flooder Areas
+@params floodedAreas is a vector that is filled in during function invocation. 
+@params numberofClasses iz  total number of classes analyzed by k-means
+@params floodClassesNum is a number of flood classes to calculate area
+*/
 calculateFloodedAreasFromKMeansOutput(
   std::vector<unsigned int>& floodedAreas, // vector to fill
   unsigned int numberOfClasses,

@@ -2,6 +2,13 @@
 
 #include <iostream>
 
+/*
+*
+* Utility scripts for converting strings to polarization and vice versa.
+*
+*/
+
+
 enum class Polarization
 {
   VH,

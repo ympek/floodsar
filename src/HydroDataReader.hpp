@@ -6,6 +6,10 @@
 #include "csv.hpp"
 #include "types.hpp"
 
+/*
+Class for paring discharge data.
+*/
+
 class HydroDataReader
 {
 public:

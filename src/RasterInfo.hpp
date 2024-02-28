@@ -7,6 +7,12 @@
 
 namespace fs = std::filesystem;
 
+/*
+*
+* Utility class for extracting infromation about satellite imagery
+*
+*/
+
 class RasterInfo
 {
 public:
@@ -22,13 +28,18 @@ public:
   Polarization pol;
   Date date;
 };
-
+/*
+* 
+* This class contains methods to retrevie acquistiion date and polarization for input satellite imagery filebuf*
+*
+*/
 class RasterInfoExtractor
 {
 public:
   virtual RasterInfo extractFromPath(std::string filepath) = 0;
 };
 
+//Extractor for file preprocessed using Hyp3
 class AsfExtractor : public RasterInfoExtractor
 {
 public:
@@ -52,7 +63,7 @@ public:
     return RasterInfo(filepath, resultPol, resultDate);
   }
 };
-
+//Extractor for locally processed imagery files (date + polarization) 
 class StdExtractor : public RasterInfoExtractor
 {
 public:
